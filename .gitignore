@@ -1,0 +1,32 @@
+# ── Package manager ───────────────────────────────────────────────────────────
+# elpaca clones, builds, and caches every package here — fully regenerated on
+# first startup, so it must never be committed.
+elpaca/
+
+# Leftover package.el directory (superseded by elpaca — safe to delete).
+elpa/
+
+# ── Runtime state (no-littering var/) ────────────────────────────────────────
+# Holds auto-saves, backups, recentf, savehist, bookmarks, eln-cache, etc.
+# All machine-specific and fully regenerated at runtime.
+var/
+
+# ── Runtime config (no-littering etc/) ───────────────────────────────────────
+# Holds package-generated config (gnus, yasnippet snippet cache, etc.).
+# If you create CUSTOM yasnippet snippets you want to track, move them into
+# a top-level snippets/ directory and add that to the repo instead.
+etc/
+
+# ── Stale native-compilation cache (root-level, superseded by var/eln-cache/) ─
+eln-cache/
+
+# ── Stale auto-save directory (root-level, superseded by var/auto-save/) ──────
+auto-save-list/
+
+# ── Emacs lock / auto-save swap files ────────────────────────────────────────
+\#*\#
+.\#*
+
+# ── Byte-compiled files ───────────────────────────────────────────────────────
+# Your source .el files are committed; .elc files are machine-generated.
+*.elc
