@@ -25,7 +25,9 @@
 
 
 (use-package evil-snipe
-  :config 
+  :ensure t
+  :after evil
+  :config
   (evil-snipe-mode 1)
   (evil-snipe-override-mode 1))
 

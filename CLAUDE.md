@@ -26,11 +26,14 @@ Cross-platform Emacs config targeting Linux, macOS, and Windows. Uses **elpaca**
 │   ├── lang-lsp.el        # eglot (built-in LSP)
 │   ├── lang-python.el     # Python config
 │   ├── lang-zig.el        # Zig config
+│   ├── keybindings.el     # general.el SPC leader + hydra UIs (window-resize, text-scale, git-hunk)
+│   ├── lang-c.el          # C/C++ config
+│   ├── magit-config.el    # magit + diff-hl gutter + git-timemachine
 │   ├── org-config.el      # org, org-modern, org-superstar, org-super-agenda, org-ql, denote
 │   ├── project-setup.el   # project.el with custom root markers
 │   ├── themes.el          # Theme package installs (modus-themes, ef-themes, etc.)
-│   ├── ui-tweaks.el       # Minor UI settings
-│   └── window.el          # Window/frame management (ace-window, etc.)
+│   ├── ui-tweaks.el       # which-key, line numbers, rg.el
+│   └── window.el          # ace-window, evil-snipe, avy
 └── os/                    # OS-specific overrides — only ONE is loaded at startup
     ├── linux.el
     ├── macos.el
@@ -83,6 +86,8 @@ All packages are lazy by default. A `use-package` block's `:config` section only
 - `evil` — modal editing must be active before any keypress
 - `org-modern` — `(global-org-modern-mode)` is in its `:config`
 - `no-littering` — must intercept file paths before any other package runs
+- `hydra`, `general` — must be loaded before keybindings are defined
+- `diff-hl` — `(global-diff-hl-mode 1)` is in its `:config`
 - `gcmh`, `vertico`, `orderless`, `marginalia`, `corfu` — active from the first interaction
 
 ### 4. no-littering load order
