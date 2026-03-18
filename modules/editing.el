@@ -11,13 +11,20 @@
 
 (use-package yasnippet
   :ensure t
+  :demand t   ; yas-global-mode in :config requires eager load
   :config
   (use-package yasnippet-snippets :ensure t)
+
+  ;; Add the repo-tracked custom snippets dir (not gitignored like etc/).
+  ;; Prepend so our snippets take priority over yasnippet-snippets on collision.
+  ;; #'string= prevents duplicates if editing.el is reloaded.
+  (add-to-list 'yas-snippet-dirs
+               (expand-file-name "snippets" my/emacs-dir)
+               nil #'string=)
+
   (yas-reload-all)
   (setq yas-triggers-in-field t)
-
-  )
-(yas-global-mode 1)
+  (yas-global-mode 1))
 
 
 

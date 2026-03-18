@@ -34,5 +34,9 @@
 ;; (when (display-graphic-p)
 ;;   (my/set-font "LigaSauceCodePro NF" 120))
 
+
+(load-theme 'solarized-wombat-dark)
+
+
 (provide 'linux)
 ;;; linux.el ends here

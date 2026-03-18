@@ -1,51 +1,30 @@
 ;;; modules/themes.el --- My Favorite Themes for Emacs -*- lexical-binding: t; -*-
 
-;; Ubuntu Theme
-(use-package ubuntu-theme)
+(use-package ubuntu-theme   :ensure t)
+(use-package poet-theme     :ensure t)
+(use-package solarized-theme :ensure t)
+(use-package gruvbox-theme  :ensure t)
 
-;; Poet Theme
-(use-package poet-theme)
-
-;; Solarized Theme
-(use-package solarized-theme)
-
-
-;; Zenburn Theme
 (use-package zenburn-theme
-  :config
-  (setq zenburn-scale-org-headlines t)
-  ;; scale headings in outline-mode
-  (setq zenburn-scale-outline-headlines t)
-  )
-
-;; Gruvbox
-
-(use-package gruvbox-theme)
-
-(use-package modus-themes
   :ensure t
-  :demand t
+  :custom
+  (zenburn-scale-org-headlines t)
+  (zenburn-scale-outline-headlines t))
+
+;; modus-themes ships built-in with Emacs 29+.  Using :ensure nil prevents
+;; elpaca from installing a second copy, which would cause a byte-compiled
+;; macro mismatch and break startup with an eager-macroexpand error.
+(use-package modus-themes
+  :ensure nil
   :custom
   (modus-themes-mixed-fonts t)
   (modus-themes-italic-constructs t)
   (modus-themes-bold-constructs t)
   (modus-themes-variable-pitch-ui t)
-  (modus-themes-headings (quote ((1 1.5) (2 1.17))))
-  )
-
-
-
-;; Ef-Themes
+  (modus-themes-headings '((1 1.5) (2 1.17))))
 
 (use-package ef-themes
-  :ensure t
-  :config
-  (modus-themes-include-derivatives-mode 1)
-  (setq modus-themes-mixed-fonts t)
-  (setq modus-themes-italic-constructs t)
-
-  ;(modus-themes-load-random-light)
-  )
+  :ensure t)
 
 
 (provide 'themes)

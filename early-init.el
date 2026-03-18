@@ -49,12 +49,17 @@
   (startup-redirect-eln-cache
    (expand-file-name "var/eln-cache/" user-emacs-directory)))
 
-;;; ── 8. Disable package.el ───────────────────────────────────────────────────
+;;; ── 8. Trust All Themes ─────────────────────────────────────────────────────
+;; Suppress the "This theme runs Lisp code — is it safe?" prompt for every
+;; theme. In a personal config you own all the themes, so the prompt is noise.
+(setq custom-safe-themes 'all)
+
+;;; ── 9. Disable package.el ───────────────────────────────────────────────────
 ;; We use elpaca as our package manager. Prevent package.el from activating
 ;; and potentially loading stale packages from a previous install.
 (setq package-enable-at-startup nil)
 
-;;; ── 9. Encoding (Critical for Cross-Platform Correctness) ──────────────────
+;;; ── 10. Encoding (Critical for Cross-Platform Correctness) ──────────────────
 ;; Set UTF-8 globally before anything else runs, so files opened via any OS are
 ;; decoded consistently.
 (set-language-environment  "UTF-8")
