@@ -1,0 +1,28 @@
+# -*- mode: snippet -*-
+# name: mkDerivation — standard package derivation skeleton
+# key: mkderiv
+# --
+{ lib
+, stdenv
+, fetchurl
+${1:, ${2:cmake}}
+}:
+
+stdenv.mkDerivation rec {
+  pname = "${3:my-package}";
+  version = "${4:0.1.0}";
+
+  src = fetchurl {
+    url = "https://${5:example.com}/$\{pname}-$\{version}.tar.gz";
+    sha256 = lib.fakeSha256;  # replace after first build attempt
+  };
+
+  ${6:nativeBuildInputs = [ $2 ];}
+
+  meta = with lib; {
+    description = "${7:A package}";
+    homepage    = "https://${8:example.com}";
+    license     = licenses.${9:mit};
+    maintainers = with maintainers; [ $0 ];
+  };
+}

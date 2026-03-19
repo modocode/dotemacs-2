@@ -1,0 +1,26 @@
+# -*- mode: snippet -*-
+# name: shell.nix — Python development shell
+# key: shellpython
+# --
+{ pkgs ? import <nixpkgs> {} }:
+
+pkgs.mkShell {
+  name = "${1:python-dev}";
+
+  buildInputs = with pkgs; [
+    (python3.withPackages (ps: with ps; [
+      pip
+      setuptools
+      ${2:# add python packages here — e.g. numpy requests}
+      $0
+    ]))
+    python3Packages.black
+    python3Packages.mypy
+    nodePackages.pyright   # LSP server — picked up by eglot via envrc
+  ];
+
+  shellHook = ''
+    echo "Python: $(python --version)"
+    ${3:# source .venv/bin/activate 2>/dev/null || true}
+  '';
+}

@@ -1,0 +1,24 @@
+# -*- mode: snippet -*-
+# name: shell.nix — C/C++ development shell
+# key: shellc
+# --
+{ pkgs ? import <nixpkgs> {} }:
+
+pkgs.mkShell {
+  name = "${1:c-dev}";
+
+  buildInputs = with pkgs; [
+    gcc
+    clang
+    clang-tools   # provides clangd — LSP server picked up by eglot via envrc
+    cmake
+    gnumake
+    gdb
+    ${2:valgrind}
+    $0
+  ];
+
+  shellHook = ''
+    echo "CC: $(cc --version | head -1)"
+  '';
+}
