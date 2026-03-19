@@ -7,5 +7,11 @@
 ;; Example: ensure UTF-8 even though Windows defaults to CP-1252
 ;; (prefer-coding-system 'utf-8-unix)
 
+(setq ring-bell-function #'ignore)
+
+;; Org paths on network drive
+(my/register-path 'org-dir   "N:/org/")
+
+
 (provide 'windows)
 ;;; windows.el ends here
