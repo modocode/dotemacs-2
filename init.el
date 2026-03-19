@@ -121,8 +121,9 @@ Use this for drop-in directories: drop a .el file in, restart Emacs, done."
           (message "[my/load-directory] Skipping '%s': %s"
                    (file-name-nondirectory file)
                    (error-message-string err)))))
-     ;; `directory-files' with these args returns a list of absolute .el paths.
-     (directory-files dir t "\\.el$" t))))
+     ;; Sorted alphabetically — order matters: keybindings.el (k) must load
+     ;; before any module that calls my/leader (e.g. nix-config.el, n).
+     (directory-files dir t "\\.el$"))))
 
 ;; Scan and load every file in modules/
 ;; To add a new plugin: create modules/my-plugin.el — that's it.
@@ -161,7 +162,11 @@ Use this for drop-in directories: drop a .el file in, restart Emacs, done."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("6efc2371dc77a14f7dc6618d836e960ca4e64ee24424cfb85481d69716f0df58"
+   '("36d4b9573ed57b3c53261cb517eef2353058b7cf95b957f691f5ad066933ae84"
+     "7fea145741b3ca719ae45e6533ad1f49b2a43bf199d9afaee5b6135fd9e6f9b8"
+     "8fbf2d585f1138caaafa9e523fa3a20614c1d1dcc6002c9808c3e40028e21df4"
+     "dde7fb0b1ed1bb5b61e62bf1a00696cf099a2b290718aee9b377365b3ed992f0"
+     "6efc2371dc77a14f7dc6618d836e960ca4e64ee24424cfb85481d69716f0df58"
      "c44617ae58f5005e0d736f0c6213fbb20b385adc8d0e8e4c7f2eb32bb90e3531"
      "21c4c4b7d3ab161aaa28b15ca846854d395c33cfb7c6863ab601adfe10d70ce0"
      "2e82fa430cf5192142736e286c1d5a531f784b560761c1d8c1cd13de0babc82a"

@@ -11,7 +11,8 @@
 ;;; ── Project Root Detection ──────────────────────────────────────────────────
 
 (defvar my/project-root-markers
-  '(".git" "pyproject.toml" "CMakeLists.txt" "build.zig" ".project")
+  '(".git" "pyproject.toml" "CMakeLists.txt" "build.zig" ".project"
+    "flake.nix" "shell.nix" ".envrc")
   "Files/directories whose presence marks a project root.
 `my/find-project-root' walks up the directory tree looking for these.")
 

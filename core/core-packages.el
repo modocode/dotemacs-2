@@ -9,7 +9,7 @@
 ;; elpaca from GitHub and byte-compiles it.  On subsequent runs it just loads
 ;; the pre-compiled autoloads — takes milliseconds.
 
-(defvar elpaca-installer-version 0.9)
+(defvar elpaca-installer-version 0.12)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory  (expand-file-name "repos/"  elpaca-directory))

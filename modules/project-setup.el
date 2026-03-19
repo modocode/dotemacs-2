@@ -36,7 +36,8 @@ Registered in `project-find-functions' so project.el uses it automatically."
                (when-let* ((root (locate-dominating-file dir marker)))
                  (cons 'local root)))
              ;; Skip .git here — project.el already handles it natively.
-             '("pyproject.toml" "CMakeLists.txt" "build.zig" ".project")))
+             '("pyproject.toml" "CMakeLists.txt" "build.zig" ".project"
+               "flake.nix" "shell.nix" ".envrc")))
 
   (add-hook 'project-find-functions #'my/project-try-local)
 
