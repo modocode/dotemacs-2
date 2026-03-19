@@ -10,7 +10,8 @@
 (setq ring-bell-function #'ignore)
 
 ;; Org paths on network drive
-(my/register-path 'org-dir "N:/")
+(my/register-path 'org-dir   "N:/")
+(my/register-path 'notes-dir "N:/")
 
 (provide 'windows)
 ;;; windows.el ends here
