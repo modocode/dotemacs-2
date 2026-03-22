@@ -60,32 +60,38 @@
 
 ;;; ── General ──────────────────────────────────────────────────────────────────
 ;; general.el is the standard way to define evil leader bindings.
-;; We use SPC as the leader in normal/visual/motion states, and M-SPC
-;; as the global-prefix so the same bindings work in insert and emacs states.
+;; SPC is the leader in meow normal/motion states; M-SPC works globally.
 
 (use-package general
   :ensure t
   :demand t
   :config
-  (general-evil-setup)
-
-  ;; SPC leader — active in normal, visual, and motion states.
+  ;; SPC leader — meow normal and motion states.
+  ;; Bindings are applied inside (with-eval-after-load 'meow) below because
+  ;; meow-normal-state-keymap must exist before general can bind into it,
+  ;; and meow-config.el (m) loads after keybindings.el (k) alphabetically.
   (general-create-definer my/leader
-    :states  '(normal visual motion emacs)
-    :keymaps 'override
+    :keymaps '(meow-normal-state-keymap meow-motion-state-keymap)
     :prefix  "SPC"
     :global-prefix "M-SPC")
 
   ;; SPC m local leader — for mode-specific bindings added in other modules.
   ;; Example: (my/local-leader :keymaps 'python-mode-map "r" #'run-python)
   (general-create-definer my/local-leader
-    :states  '(normal visual motion emacs)
-    :keymaps 'override
+    :keymaps '(meow-normal-state-keymap meow-motion-state-keymap)
     :prefix  "SPC m"
     :global-prefix "M-SPC m")
 
   ;; Enable recentf so SPC f r works.
-  (recentf-mode 1)
+  (recentf-mode 1))
+
+;; Leader bindings are deferred until meow loads so its state keymaps exist.
+(with-eval-after-load 'meow
+  ;; Meow binds SPC → meow-keypad by default.  Remove it so general can
+  ;; install its own prefix map there.  This must happen before my/leader
+  ;; makes its first binding under the SPC prefix.
+  (define-key meow-normal-state-keymap (kbd "SPC") nil)
+  (define-key meow-motion-state-keymap (kbd "SPC") nil)
 
   (my/leader
 
@@ -121,10 +127,10 @@
     "w s" '(split-window-below        :which-key "split below")
     "w d" '(delete-window             :which-key "delete")
     "w o" '(delete-other-windows      :which-key "only this")
-    "w h" '(evil-window-left          :which-key "go ←")
-    "w j" '(evil-window-down          :which-key "go ↓")
-    "w k" '(evil-window-up            :which-key "go ↑")
-    "w l" '(evil-window-right         :which-key "go →")
+    "w h" '(windmove-left              :which-key "go ←")
+    "w j" '(windmove-down             :which-key "go ↓")
+    "w k" '(windmove-up               :which-key "go ↑")
+    "w l" '(windmove-right            :which-key "go →")
     "w a" '(ace-window                :which-key "ace jump")
     "w =" '(balance-windows           :which-key "balance")
     "w r" '(hydra-window-resize/body  :which-key "resize…")
@@ -175,6 +181,17 @@
     "o n" '(denote                    :which-key "new note")
     "o l" '(denote-link               :which-key "link note")
     "o b" '(denote-backlinks          :which-key "backlinks")
+
+    ;; ── Log / Clock (l) ──────────────────────────────────────────────────────
+    "l"   '(:ignore t                      :which-key "log / clock")
+    "l l" '(hydra-clock/body               :which-key "clock menu…")
+    "l i" '(org-clock-in                   :which-key "clock in")
+    "l o" '(org-clock-out                  :which-key "clock out")
+    "l g" '(org-clock-goto                 :which-key "goto active")
+    "l r" '(org-clock-report               :which-key "report")
+    "l d" '(org-clock-display              :which-key "display totals")
+    "l p" '(org-pomodoro                   :which-key "pomodoro")
+    "l c" '(org-clock-cancel               :which-key "cancel clock")
 
     ;; ── Code (c) ─────────────────────────────────────────────────────────────
     "c"   '(:ignore t                 :which-key "code")

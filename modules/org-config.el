@@ -184,6 +184,16 @@
 (setq org-ellipsis " ▼ ")
 
 
+;; --- Evil Org (restores TAB=org-cycle and other keys overridden by evil-collection)
+
+(use-package evil-org
+  :ensure t
+  :after (evil org)
+  :hook (org-mode . evil-org-mode)
+  :config
+  (evil-org-set-key-theme '(navigation insert textobjects additional calendar)))
+
+
 ;; --- Org Ql
 
 (use-package org-ql

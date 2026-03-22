@@ -162,7 +162,8 @@ Use this for drop-in directories: drop a .el file in, restart Emacs, done."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("36d4b9573ed57b3c53261cb517eef2353058b7cf95b957f691f5ad066933ae84"
+   '("b02db5b3ecdc6495567781fb114d0f058840e16f9863e2cd5159b6c15f8e5cb5"
+     "36d4b9573ed57b3c53261cb517eef2353058b7cf95b957f691f5ad066933ae84"
      "7fea145741b3ca719ae45e6533ad1f49b2a43bf199d9afaee5b6135fd9e6f9b8"
      "8fbf2d585f1138caaafa9e523fa3a20614c1d1dcc6002c9808c3e40028e21df4"
      "dde7fb0b1ed1bb5b61e62bf1a00696cf099a2b290718aee9b377365b3ed992f0"

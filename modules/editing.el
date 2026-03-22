@@ -1,12 +1,12 @@
 ;;; modules/editing.el --- Packages that help with editing files in emacs -*- lexical-binding: t; -*-
 
+
 (use-package smartparens
   :ensure smartparens  ;; install the package
   :hook (prog-mode text-mode markdown-mode) ;; add `smartparens-mode` to these hooks
   :config
   ;; load default config
   (require 'smartparens-config))
-
 
 
 (use-package yasnippet
@@ -25,6 +25,21 @@
   (yas-reload-all)
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
+
+
+(use-package browse-kill-ring
+  :ensure t
+  :demand t
+  )
+
+
+(use-package vundo :ensure t  )
+
+
+(use-package simpleclip :ensure t
+  :config
+  (simpleclip-mode 1))
+
 
 
 
