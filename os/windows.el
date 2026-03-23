@@ -12,7 +12,10 @@
 ;; Start find-file from home, not the Emacs install directory.
 (setq default-directory (expand-file-name "~/"))
 
-(load-theme 'gruvbox)
+;; Defer theme loading until elpaca has finished building all packages.
+;; Calling load-theme here directly fails on first run because gruvbox-theme
+;; hasn't been installed yet when os/windows.el loads.
+(add-hook 'elpaca-after-init-hook (lambda () (load-theme 'gruvbox t)))
 
 ;; Sync exec-path from the Windows PATH environment variable.
 ;; Emacs launched from a shortcut/Start menu often inherits a stripped PATH
