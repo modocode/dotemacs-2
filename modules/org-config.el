@@ -7,6 +7,11 @@
 ;;   (my/register-path 'org-dir   "~/wherever/org/")
 ;;   (my/register-path 'notes-dir "~/wherever/notes/")
 
+(defun my/org-file (name)
+  "Return the full path to NAME within the registered org-dir.
+Falls back to ~/org/ on machines where org-dir has not been set."
+  (concat (file-name-as-directory (my/path 'org-dir "~/org/")) name))
+
 (use-package org
   :ensure nil   ; org is built-in; elpaca should not manage it
   :config
@@ -27,7 +32,117 @@
   (setq org-log-into-drawer          t)
 
   ;; Will set org-todo-keywords after watching gtd jjo
-  )
+
+  ;; ── Capture Templates ────────────────────────────────────────────────────
+  ;; All file paths go through my/org-file so they resolve against org-dir,
+  ;; which is set per-machine in os/*.el (e.g. "N:/" on Windows).
+  (setq org-capture-templates
+        `(("t" "Tasks")
+          ("tt" "Inbox Task" entry (file+headline ,(my/org-file "gtd.org") "Inbox")
+           "* TODO %^{Task Name} %^G\n  %U\n  %i"
+           :empty-lines 1 :kill-buffer t)
+
+          ("tw" "Work Task" entry (file+headline ,(my/org-file "gtd.org") "Work")
+           "* TODO %^{Task Name} :work:\n  SCHEDULED: %t\n  %a"
+           :empty-lines 1)
+
+          ("ti" "Immediate/Urgent" entry (file+headline ,(my/org-file "gtd.org") "Inbox")
+           "* TODO [#A] %^{Task Name} :urgent:\n  SCHEDULED: %t\n"
+           :immediate-finish t)
+
+          ;; --- Group 2: Contextual & Reading ---
+          ("r" "Reference/Reading")
+
+          ("rl" "Link to Read" entry (file+headline ,(my/org-file "gtd.org") "Reading List")
+           "* TODO Read: %:description\n  Source: %u\n  %c\n  %a"
+           :empty-lines 1)
+
+          ("rc" "Code Snippet" entry (file+headline ,(my/org-file "gtd.org") "Resources")
+           "* %^{Description} :code:\n#+BEGIN_SRC %^{Language}\n%i\n#+END_SRC\n  Source: %a")
+
+          ;; --- Group 3: Life Maintenance (Health & Admin) ---
+          ("l" "Life")
+          ("lh" "Health/Gym" entry (file+headline ,(my/org-file "gtd.org") "Health")
+           "* TODO %^{Workout/Health Task} :health:\n  SCHEDULED: %^t\n  %?"
+           :empty-lines 1)
+          ("la" "Admin/Finance" entry (file+headline ,(my/org-file "gtd.org") "Admin")
+           "* TODO %^{Admin Task} :admin:\n  DEADLINE: %^t\n  %?"
+           :empty-lines 1)
+          ("ln" "Networking/Social" entry (file+headline ,(my/org-file "gtd.org") "Social")
+           "* TODO %^{Event/Meetup} :social:org:\n  SCHEDULED: %^t\n  %?"
+           :empty-lines 1)
+
+          ;; --- Group n: Information ---
+          ("i" "Information")
+
+          ("in" "New Info" entry (file+headline ,(my/org-file "gtd.org") "Info")
+           "* %?\n:PROPERTIES:\n:SOURCE: %^{Source URL|Manual}\n:CAPTURED: %U\n:END:\n\n%i"
+           :empty-lines 1)
+          ("it" "Tech Tip" entry (file+headline ,(my/org-file "gtd.org") "Info")
+           "* %? :TECH:\n:PROPERTIES:\n:LANGUAGE: %^{Language}\n:CAPTURED: %U\n:END:\n\n#+BEGIN_SRC %\\1\n%i\n#+END_SRC"
+           :empty-lines 1)
+          ("if" "Quick Fact" entry (file+headline ,(my/org-file "gtd.org") "Info")
+           "* %^{Fact About}: %?\n  :PROPERTIES:\n  :CAPTURED: %U\n  :END:"
+           :immediate-finish t)
+          ("iq" "Quote" entry (file+headline ,(my/org-file "gtd.org") "Info")
+           "* Quote by %^{Author} :QUOTE:\n  %U\n  #+BEGIN_QUOTE\n  %i%?\n  #+END_QUOTE")
+
+          ;; --- Group 4: Journal & Reviews ---
+          ("j" "Journaling")
+
+          ("jj" "Journal Entry" entry (file+datetree ,(my/org-file "journal.org"))
+           "* %<%H:%M> %^{Title}\n  %?")
+
+          ("jr" "Daily Review" entry (file+datetree ,(my/org-file "journal.org"))
+           "* %<%H:%M> Daily Review\n  1. What went well today?\n     %?\n  2. What could be improved?\n     \n")
+
+          ;; --- Project Management Group ---
+          ("s" "Someday/Maybe" entry (file+headline ,(my/org-file "gtd.org") "Someday")
+           "* %?\n:PROPERTIES:\n:ENTERED: %U\n:END:\n\n%i")
+
+          ("p" "Universal Project Mission" entry
+           (file+headline ,(my/org-file "projects.org") "Missions")
+           "* MISSION: %^{Project Name} :SYSTEMS_ENG:
+		    :PROPERTIES:
+		    :ID:       %(shell-command-to-string \"uuidgen\" | tr -d '\\n')
+		    :CREATED:  %U
+		    :STATUS:   INITIATING
+		    :CATEGORY: %^{Category|Lab|Invention|Personal|Software}
+		    :END:
+
+		    ,** 1. CONOPS (Concept of Operations)
+		    - **Primary Intent:** %^{What is the singular purpose of this creation?}
+		    - **Operating Environment:** %^{Where/When will this exist? (e.g., local server, outdoor, lab)}
+		    - **The 'Impossible' Constraint:** %^{What is the bottleneck we are breaking?}
+
+		    ,** 2. ARCHITECTURAL DECOMPOSITION (The V-Model)
+		    - [ ] [MODULE-A]: %^{Physical or Logic Layer 1}
+		    - [ ] [MODULE-B]: %^{Physical or Logic Layer 2}
+		    - [ ] [INTERFACE]: %^{How do these modules exchange energy/data/force?}
+
+		    ,** 3. PERFORMANCE REQUIREMENTS (Success Metrics)
+		    | Parameter        | Target/Baseline | Actual Result | Status |
+		    |------------------+-----------------+---------------+--------|
+		    | Metric 1 (Main)  | %^{Target}      |               | PEND   |
+		    | Metric 2 (Const) |                 |               | PEND   |
+		    | Metric 3 (Efficiency) |             |               | PEND   |
+
+		    ,** 4. THE EXECUTION LOOP (Cybernetic Log)
+		    ,#+BEGIN_QUOTE
+		    \"A system is only as good as its feedback.\"
+		    ,#+END_QUOTE
+		    %?
+
+		    ,** 5. V&V (Verification & Validation)
+		    - [ ] **Verification:** Did the build match the blueprint?
+		    - [ ] **Validation:** Does the blueprint actually solve the user's problem?
+		    - [ ] **Recursive Shift:** What is the 10x version of this system?
+
+		    ,** 6. KNOWLEDGE EXTRACTION (Resume/Portfolio)
+		    - **Challenge:** %^{The core problem faced}
+		    - **Action:** Implemented %\\1 using %^{Primary Tools/Methods}.
+		    - **Result:** %^{Quantifiable outcome (%, $, Time, Speed)}."
+           ))))
 
 ;; --- Org Todo
 
@@ -236,124 +351,6 @@
           (org-ql-block '(and (todo "NEXT") (tags "home"))
                         ((org-ql-block-header "🏠 Home & Environment")))))))
 
-;; --- Org Capture Templates
-
-(setq org-capture-templates
-      '(("t" "Tasks")
-        ("tt" "Inbox Task" entry (file+headline "~/org/gtd.org" "Inbox")
-         "* TODO %^{Task Name} %^G\n  %U\n  %i"
-         :empty-lines 1 :kill-buffer t)
-
-        ("tw" "Work Task" entry (file+headline "~/org/gtd.org" "Work")
-         "* TODO %^{Task Name} :work:\n  SCHEDULED: %t\n  %a"
-         :empty-lines 1)
-
-        ("ti" "Immediate/Urgent" entry (file+headline "~/org/gtd.org" "Inbox")
-         "* TODO [#A] %^{Task Name} :urgent:\n  SCHEDULED: %t\n"
-         :immediate-finish t)
-        ;; --- Group 2: Contextual & Reading ---
-        ("r" "Reference/Reading")
-
-        ;; Captures a link, uses %c to paste clipboard content automatically
-        ("rl" "Link to Read" entry (file+headline "~/org/gtd.org" "Reading List")
-         "* TODO Read: %:description\n  Source: %u\n  %c\n  %a"
-         :empty-lines 1)
-
-        ;; Great for saving code snippets or specific text selections (%i)
-        ("rc" "Code Snippet" entry (file+headline "~/org/gtd.org" "Resources")
-         "* %^{Description} :code:\n#+BEGIN_SRC %^{Language}\n%i\n#+END_SRC\n  Source: %a")
-
-
-	;; --- Group 3: Life Maintenance (Health & Admin) ---
-        ("l" "Life")
-        ("lh" "Health/Gym" entry (file+headline "~/org/gtd.org" "Health")
-         "* TODO %^{Workout/Health Task} :health:\n  SCHEDULED: %^t\n  %?"
-         :empty-lines 1)
-        ("la" "Admin/Finance" entry (file+headline "~/org/gtd.org" "Admin")
-         "* TODO %^{Admin Task} :admin:\n  DEADLINE: %^t\n  %?"
-         :empty-lines 1)
-        ("ln" "Networking/Social" entry (file+headline "~/org/gtd.org" "Social")
-         "* TODO %^{Event/Meetup} :social:org:\n  SCHEDULED: %^t\n  %?"
-         :empty-lines 1)
-		
-
-        ;; --- Group n: Information ---
-        ("i" "Information")
-        
-        ("in" "New Info" entry (file+headline "~/org/gtd.org" "Info")
-      	 "* %?\n:PROPERTIES:\n:SOURCE: %^{Source URL|Manual}\n:CAPTURED: %U\n:END:\n\n%i"
-      	 :empty-lines 1)
-    	("it" "Tech Tip" entry (file+headline "~/org/gtd.org" "Info")
-    	 "* %? :TECH:\n:PROPERTIES:\n:LANGUAGE: %^{Language}\n:CAPTURED: %U\n:END:\n\n#+BEGIN_SRC %\\1\n%i\n#+END_SRC"
-    	 :empty-lines 1)
-        ("if" "Quick Fact" entry (file+headline "~/org/gtd.org" "Info")
-         "* %^{Fact About}: %?\n  :PROPERTIES:\n  :CAPTURED: %U\n  :END:"
-         :immediate-finish t)
-  		("iq" "Quote" entry (file+headline "~/org/gtd.org" "Info")
-  		 "* Quote by %^{Author} :QUOTE:\n  %U\n  #+BEGIN_QUOTE\n  %i%?\n  #+END_QUOTE")
-  		
-        ;; --- Group 4: Journal & Reviews ---
-        ("j" "Journaling")
-
-        ;; Uses a date-tree format in a separate file
-        ("jj" "Journal Entry" entry (file+datetree "~/org/journal.org")
-         "* %<%H:%M> %^{Title}\n  %?")
-
-        ("jr" "Daily Review" entry (file+datetree "~/org/journal.org")
-         "* %<%H:%M> Daily Review\n  1. What went well today?\n     %?\n  2. What could be improved?\n     \n")
-
-      	;; --- Project Management Group ---
-       	    ("s" "Someday/Maybe" entry (file+headline "~/org/gtd.org" "Someday")
-		"* %?\n:PROPERTIES:\n:ENTERED: %U\n:END:\n\n%i")
-        
-
-	    ("p" "Universal Project Mission" entry
-		    (file+headline "~/org/projects.org" "Missions")
-		    "* MISSION: %^{Project Name} :SYSTEMS_ENG:
-		    :PROPERTIES:
-		    :ID:       %(shell-command-to-string \"uuidgen\" | tr -d '\\n')
-		    :CREATED:  %U
-		    :STATUS:   INITIATING
-		    :CATEGORY: %^{Category|Lab|Invention|Personal|Software}
-		    :END:
-
-		    ,** 1. CONOPS (Concept of Operations)
-		    - **Primary Intent:** %^{What is the singular purpose of this creation?}
-		    - **Operating Environment:** %^{Where/When will this exist? (e.g., local server, outdoor, lab)}
-		    - **The 'Impossible' Constraint:** %^{What is the bottleneck we are breaking?}
-
-		    ,** 2. ARCHITECTURAL DECOMPOSITION (The V-Model)
-		    - [ ] [MODULE-A]: %^{Physical or Logic Layer 1}
-		    - [ ] [MODULE-B]: %^{Physical or Logic Layer 2}
-		    - [ ] [INTERFACE]: %^{How do these modules exchange energy/data/force?}
-
-		    ,** 3. PERFORMANCE REQUIREMENTS (Success Metrics)
-		    | Parameter        | Target/Baseline | Actual Result | Status |
-		    |------------------+-----------------+---------------+--------|
-		    | Metric 1 (Main)  | %^{Target}      |               | PEND   |
-		    | Metric 2 (Const) |                 |               | PEND   |
-		    | Metric 3 (Efficiency) |             |               | PEND   |
-
-		    ,** 4. THE EXECUTION LOOP (Cybernetic Log)
-		    ,#+BEGIN_QUOTE
-		    \"A system is only as good as its feedback.\" 
-		    ,#+END_QUOTE
-		    %?
-
-		    ,** 5. V&V (Verification & Validation)
-		    - [ ] **Verification:** Did the build match the blueprint?
-		    - [ ] **Validation:** Does the blueprint actually solve the user's problem?
-		    - [ ] **Recursive Shift:** What is the 10x version of this system?
-
-		    ,** 6. KNOWLEDGE EXTRACTION (Resume/Portfolio)
-		    - **Challenge:** %^{The core problem faced}
-		    - **Action:** Implemented %\\1 using %^{Primary Tools/Methods}.
-		    - **Result:** %^{Quantifiable outcome (%, $, Time, Speed)}."
-			    )
-
-        )
-
-	  )
 
 ;; --- Structure Templates
 

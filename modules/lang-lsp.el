@@ -30,9 +30,12 @@ For per-buffer control at runtime, use `my/toggle-eglot'.")
 
 ;;; ── Python Server Selection ─────────────────────────────────────────────────
 
-(defvar my/python-lsp-server "pyright"
+(defvar my/python-lsp-server "basedpyright"
   "Which Python language server to use with Eglot.
-Valid values: \"pyright\" (feature-rich, Microsoft) or \"pylsp\" (open-source).
+Valid values:
+  \"basedpyright\" — recommended; pip install basedpyright (reliable on Windows)
+  \"pyright\"      — pip install pyright (unreliable on Windows due to wrapper chain)
+  \"pylsp\"        — pip install python-lsp-server (pure Python, no Node dependency)
 The corresponding executable must be on your PATH.")
 
 ;;; ── Eglot ───────────────────────────────────────────────────────────────────
@@ -62,9 +65,10 @@ The corresponding executable must be on your PATH.")
   (unless (executable-find "clangd")
     (warn "lang-lsp: `clangd' not found. C/C++ LSP will not start. Install: llvm/clangd"))
 
-  (unless (or (executable-find "pyright-langserver")
+  (unless (or (executable-find "basedpyright-langserver")
+              (executable-find "pyright-langserver")
               (executable-find "pylsp"))
-    (warn "lang-lsp: No Python LSP found. Install pyright (`pip install pyright') or pylsp."))
+    (warn "lang-lsp: No Python LSP found. Install: pip install basedpyright"))
 
   (unless (executable-find "zls")
     (warn "lang-lsp: `zls' not found. Zig LSP will not start. Install: https://github.com/zigtools/zls"))
@@ -75,6 +79,10 @@ The corresponding executable must be on your PATH.")
   ;; C/C++ (clangd) and Zig (zls via add-to-list below) use Eglot defaults.
 
   (pcase my/python-lsp-server
+    ("basedpyright"
+     (add-to-list 'eglot-server-programs
+                  '((python-mode python-ts-mode)
+                    . ("basedpyright-langserver" "--stdio"))))
     ("pyright"
      (add-to-list 'eglot-server-programs
                   '((python-mode python-ts-mode)
