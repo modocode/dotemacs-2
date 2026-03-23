@@ -46,13 +46,21 @@
 ;; Windows uses "python" not "python3"
 (setq python-shell-interpreter "python")
 
-;; Add Python Scripts dirs to exec-path so pyright-langserver is found.
-;; Covers both global installs (Local) and user-site installs (Roaming).
+;; Add Python root and Scripts dirs to exec-path and PATH.
+;; Root dir  → python.exe  (pyright needs this to resolve imports / type stubs)
+;; Scripts/  → pyright-langserver.exe, pip.exe, etc.
+;; Without the root on PATH, pyright finds pyright-langserver but then
+;; crashes immediately (status 1) because it can't locate python.exe.
 (dolist (candidate
-         (list (expand-file-name "AppData/Local/Programs/Python/Python312/Scripts" "~")
+         (list (expand-file-name "AppData/Local/Programs/Python/Python313"         "~")
+               (expand-file-name "AppData/Local/Programs/Python/Python313/Scripts" "~")
+               (expand-file-name "AppData/Local/Programs/Python/Python312"         "~")
+               (expand-file-name "AppData/Local/Programs/Python/Python312/Scripts" "~")
+               (expand-file-name "AppData/Local/Programs/Python/Python311"         "~")
                (expand-file-name "AppData/Local/Programs/Python/Python311/Scripts" "~")
-               (expand-file-name "AppData/Roaming/Python/Python312/Scripts" "~")
-               (expand-file-name "AppData/Roaming/Python/Python311/Scripts" "~")))
+               (expand-file-name "AppData/Roaming/Python/Python313/Scripts"        "~")
+               (expand-file-name "AppData/Roaming/Python/Python312/Scripts"        "~")
+               (expand-file-name "AppData/Roaming/Python/Python311/Scripts"        "~")))
   (when (file-directory-p candidate)
     (add-to-list 'exec-path candidate)
     (setenv "PATH" (concat candidate ";" (getenv "PATH")))))

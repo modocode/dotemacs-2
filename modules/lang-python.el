@@ -107,6 +107,23 @@ picked up by the language server."
                                (lambda (_b _s) nil))))
               nil t)))
 
+(defun my/python-show-eglot-stderr ()
+  "Pop to the eglot stderr buffer for the current project.
+Use this when the language server crashes to see the actual error message."
+  (interactive)
+  (let* ((server (eglot-current-server))
+         (buf (and server (jsonrpc--stderr-buffer server))))
+    (if (buffer-live-p buf)
+        (pop-to-buffer buf)
+      ;; Server is gone — look for the buffer by name pattern.
+      (let ((found (cl-find-if
+                    (lambda (b)
+                      (string-match-p "EGLOT.*stderr" (buffer-name b)))
+                    (buffer-list))))
+        (if found
+            (pop-to-buffer found)
+          (message "No eglot stderr buffer found."))))))
+
 ;;; ── SPC m local leader bindings (Python) ───────────────────────────────────
 ;; Deferred until general is loaded (keybindings.el sets up my/local-leader).
 
@@ -118,7 +135,8 @@ picked up by the language server."
       "a" '(pyvenv-activate        :which-key "activate venv")
       "d" '(pyvenv-deactivate      :which-key "deactivate venv")
       "p" '(my/python-pip-install  :which-key "pip install")
-      "r" '(run-python             :which-key "run REPL"))))
+      "r" '(run-python                  :which-key "run REPL")
+      "l" '(my/python-show-eglot-stderr :which-key "LSP log"))))
 
 (provide 'lang-python)
 ;;; lang-python.el ends here
