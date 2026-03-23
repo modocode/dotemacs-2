@@ -89,5 +89,50 @@ Typical use for `org-agenda-files':
   (let ((p (my/path key)))
     (and p (file-exists-p p))))
 
+;;; ── Font Registry ───────────────────────────────────────────────────────────
+;;
+;; Parallel to `my/paths' but for fonts.  Each entry is a cons of
+;; (font-name . height), where height is in 1/10pt units (110 = 11pt).
+;;
+;; Keys used by core-ui.el:
+;;   default  — the base/default face (monospace baseline)
+;;   fixed    — fixed-pitch face (code blocks, inline code)
+;;   variable — variable-pitch face (prose in Org/text modes)
+;;
+;; Override on a per-machine basis in your os/ file:
+;;   (my/register-font 'variable "Source Serif 4" 130)
+
+(defvar my/fonts
+  '((default  . ("Inconsolata" . 110))
+    (fixed    . ("Inconsolata" . 110))
+    (variable . ("ETBembo"     . 130)))
+  "Alist mapping font role keys to (font-name . height) conses.
+
+Keys are symbols; values are (NAME . HEIGHT) where HEIGHT is in
+1/10pt units (e.g. 130 = 13pt).
+
+Override entries for your specific machine in your os/ config file
+using `my/register-font' rather than mutating this alist directly.")
+
+(defun my/register-font (key name &optional height)
+  "Register NAME (and optional HEIGHT) for font role KEY in `my/fonts'.
+
+KEY is a symbol (e.g. \\='variable).  NAME is a font family string.
+HEIGHT is in 1/10pt units; if omitted the existing height is preserved.
+
+Example:
+  (my/register-font \\='variable \"Source Serif 4\" 130)"
+  (let ((existing (alist-get key my/fonts)))
+    (setf (alist-get key my/fonts)
+          (cons name (or height (and existing (cdr existing)) 110)))))
+
+(defun my/font-name (key)
+  "Return the font family name registered for KEY, or nil."
+  (car (alist-get key my/fonts)))
+
+(defun my/font-height (key)
+  "Return the font height (1/10pt) registered for KEY, or nil."
+  (cdr (alist-get key my/fonts)))
+
 (provide 'mo-paths)
 ;;; mo-paths.el ends here

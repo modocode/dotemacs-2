@@ -16,5 +16,18 @@
 ;;     :demand t
 ;;     :config (exec-path-from-shell-initialize)))
 
+;;; ── Font Overrides ──────────────────────────────────────────────────────────
+;; Override fonts for this machine.  Defaults (set in mo-paths.el):
+;;   default / fixed  →  Inconsolata 11pt
+;;   variable         →  ETBembo 13pt (prose in Org/text modes)
+;;
+;; Uncomment and adjust as needed:
+;; (my/register-font 'default  "Inconsolata"    110)
+;; (my/register-font 'fixed    "Inconsolata"    110)
+;; (my/register-font 'variable "ETBembo"        130)
+;;
+;; Other good variable-pitch options:
+;;   "Source Serif 4", "IBM Plex Serif", "Libre Baskerville", "Inter"
+
 (provide 'macos)
 ;;; macos.el ends here

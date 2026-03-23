@@ -31,12 +31,23 @@
   :ensure t
   :demand t
   :custom
-  (completion-styles '(orderless basic))
-  ;; Per-category overrides: files still use basic + partial-completion so
-  ;; that "~/Doc/pr" expands correctly even with orderless active.
+  (setq orderless-component-separator "[[:space:]]+")
+  (setq orderless-component-separator "[ -]")
+  (setq completion-styles '(substring orderless basic))
+  ;; orderless-prefixes: each space-separated token matches the START of a
+  ;; dash/slash-separated word component.  This is what lets you type
+  ;; "tab group" and match "tab-bar-change-tab-group" — no dash required.
+  ;; orderless-flex: "tg" fuzzy-matches "tab-group" as a last resort.
+  (orderless-matching-styles
+   '(orderless-prefixes   ; "tab g"  → matches "tab-group"
+     orderless-literal    ; "group"  → exact substring anywhere
+     orderless-flex))     ; "tgrp"   → fuzzy fallback
+  ;; Category overrides:
+  ;;   command — explicit so Emacs' own category defaults can't shadow orderless
+  ;;   file    — keep basic + partial-completion for path expansion ("~/Doc/pr")
   (completion-category-overrides
-   '((file (styles basic partial-completion)))))
-
+   '((command (styles orderless basic))
+     (file    (styles basic partial-completion)))))
 ;;; ── Marginalia ──────────────────────────────────────────────────────────────
 ;; Adds helpful annotations to minibuffer candidates: function docstrings for
 ;; M-x, file sizes for find-file, key bindings for describe-function, etc.
@@ -120,6 +131,10 @@
   :ensure t
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
+
+
+;;; Bookmarks
+(keymap-set bookmark-bmenu-mode-map "C-o" #'casual-bookmarks-tmenu)
 
 (provide 'completion-config)
 ;;; completion.el ends here

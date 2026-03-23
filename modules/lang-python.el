@@ -42,7 +42,12 @@
   :config
   ;; pyvenv-tracking-mode globally watches for pyvenv.cfg / .venv directories
   ;; as you switch buffers, activating the correct environment automatically.
-  (pyvenv-tracking-mode 1))
+  (pyvenv-tracking-mode 1)
+  ;; Reconnect eglot after venv activation so the server sees the new interpreter.
+  (add-hook 'pyvenv-post-activate-hooks
+            (lambda ()
+              (when (eglot-current-server)
+                (call-interactively #'eglot-reconnect)))))
 
 (provide 'lang-python)
 ;;; lang-python.el ends here

@@ -12,9 +12,11 @@
 ;; Start find-file from home, not the Emacs install directory.
 (setq default-directory (expand-file-name "~/"))
 
+(load-theme 'gruvbox)
+
 ;; Sync exec-path from the Windows PATH environment variable.
 ;; Emacs launched from a shortcut/Start menu often inherits a stripped PATH
-;; that omits user-level tools installed by WinGet, scoop, etc.
+
 (dolist (dir (split-string (or (getenv "PATH") "") ";"))
   (when (and (not (string-empty-p dir)) (file-directory-p dir))
     (add-to-list 'exec-path dir)))
@@ -38,9 +40,30 @@
 (setq w32-ralt-modifier 'meta
       w32-lalt-modifier  nil)
 
+;; Windows uses "python" not "python3"
+(setq python-shell-interpreter "python")
+
+;; Add Python Scripts dirs to exec-path so pyright-langserver is found.
+;; Covers both global installs (Local) and user-site installs (Roaming).
+(dolist (candidate
+         (list (expand-file-name "AppData/Local/Programs/Python/Python312/Scripts" "~")
+               (expand-file-name "AppData/Local/Programs/Python/Python311/Scripts" "~")
+               (expand-file-name "AppData/Roaming/Python/Python312/Scripts" "~")
+               (expand-file-name "AppData/Roaming/Python/Python311/Scripts" "~")))
+  (when (file-directory-p candidate)
+    (add-to-list 'exec-path candidate)
+    (setenv "PATH" (concat candidate ";" (getenv "PATH")))))
+
 ;; Org paths on network drive
 (my/register-path 'org-dir   "N:/")
 (my/register-path 'notes-dir "N:/")
+
+
+;; Fonts for this machine.
+;; Change any of these if you install a different font and want to use it here.
+(my/register-font 'default  "Inconsolata"   110)  ; base/monospace face
+(my/register-font 'fixed    "Inconsolata"   110)  ; code & inline code blocks
+(my/register-font 'variable "ETBembo"       130)  ; prose in Org/text buffers
 
 (provide 'windows)
 ;;; windows.el ends here

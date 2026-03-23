@@ -53,6 +53,24 @@ Returns t if successful, nil if the font was not found."
     (set-face-attribute 'default nil :font font-name :height size)
     t))
 
+;;; ── my/set-face-font ────────────────────────────────────────────────────────
+;; Like `my/set-font' but targets any face, not just `default'.
+;; Used by core-ui.el to configure fixed-pitch and variable-pitch faces
+;; from the `my/fonts' registry defined in mo-paths.el.
+
+(defun my/set-face-font (face font-name size)
+  "Set FACE to FONT-NAME at SIZE (1/10pt units) if the font is available.
+Returns t on success, nil if FONT-NAME is not found or SIZE is nil.
+
+Example:
+  (my/set-face-font \\='fixed-pitch \"Inconsolata\" 110)
+  (my/set-face-font \\='variable-pitch \"ETBembo\" 130)"
+  (when (and font-name size
+             (display-graphic-p)
+             (member font-name (font-family-list)))
+    (set-face-attribute face nil :font font-name :height size)
+    t))
+
 ;;; ── Directory Helpers (no-littering companions) ─────────────────────────────
 ;; Wrappers around no-littering's expansion functions so modules can resolve
 ;; paths without depending on the package symbol directly.  Both functions

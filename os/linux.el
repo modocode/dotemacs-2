@@ -29,10 +29,18 @@
 ;;   ("home-desktop"
 ;;    (my/register-path 'org-dir "~/personal/org/")))
 
-;;; ── Display Tweaks ──────────────────────────────────────────────────────────
-;; Example: increase font size for HiDPI displays
-;; (when (display-graphic-p)
-;;   (my/set-font "LigaSauceCodePro NF" 120))
+;;; ── Font Overrides ──────────────────────────────────────────────────────────
+;; Override fonts for this machine.  Defaults (set in mo-paths.el):
+;;   default / fixed  →  Inconsolata 11pt
+;;   variable         →  ETBembo 13pt (prose in Org/text modes)
+;;
+;; Uncomment and adjust as needed:
+;; (my/register-font 'default  "Inconsolata"    110)
+;; (my/register-font 'fixed    "Inconsolata"    110)
+;; (my/register-font 'variable "ETBembo"        130)
+;;
+;; Other good variable-pitch options:
+;;   "Source Serif 4", "IBM Plex Serif", "Libre Baskerville", "Inter"
 
 
 (load-theme 'solarized-wombat-dark)

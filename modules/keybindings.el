@@ -17,6 +17,8 @@
 
   ;; ── Window Resize ─────────────────────────────────────────────────────────
   ;; SPC w r — stay in the hydra, tap h/j/k/l repeatedly to resize.
+  ;; Lambda wrappers are required: commands with (interactive "p") receive nil
+  ;; instead of an integer when called by hydra under lexical-binding.
   (defhydra hydra-window-resize (:hint nil)
     "
   Window Resize
@@ -24,10 +26,10 @@
   _j_ shrink ↓   _k_ grow ↑
   _=_ balance    _q_ done
 "
-    ("h" shrink-window-horizontally)
-    ("l" enlarge-window-horizontally)
-    ("j" shrink-window)
-    ("k" enlarge-window)
+    ("h" (lambda () (interactive) (shrink-window-horizontally 3)))
+    ("l" (lambda () (interactive) (enlarge-window-horizontally 3)))
+    ("j" (lambda () (interactive) (shrink-window 3)))
+    ("k" (lambda () (interactive) (enlarge-window 3)))
     ("=" balance-windows)
     ("q" nil :exit t))
 
@@ -38,9 +40,9 @@
   Text Zoom
   _+_ larger   _-_ smaller   _0_ reset   _q_ done
 "
-    ("+" text-scale-increase)
-    ("-" text-scale-decrease)
-    ("0" (text-scale-set 0) :exit t)
+    ("+" (lambda () (interactive) (text-scale-increase 1)))
+    ("-" (lambda () (interactive) (text-scale-decrease 1)))
+    ("0" (lambda () (interactive) (text-scale-set 0)) :exit t)
     ("q" nil :exit t))
 
   ;; ── Git Hunks ─────────────────────────────────────────────────────────────
@@ -51,11 +53,66 @@
   Git Hunks
   _n_ next   _p_ prev   _s_ stage   _r_ revert   _d_ show   _q_ done
 "
-    ("n" diff-hl-next-hunk)
-    ("p" diff-hl-previous-hunk)
-    ("s" diff-hl-stage-current-hunk)
-    ("r" diff-hl-revert-hunk)
-    ("d" diff-hl-show-hunk)
+    ("n" (lambda () (interactive) (diff-hl-next-hunk)))
+    ("p" (lambda () (interactive) (diff-hl-previous-hunk)))
+    ("s" (lambda () (interactive) (diff-hl-stage-current-hunk)))
+    ("r" (lambda () (interactive) (diff-hl-revert-hunk)))
+    ("d" (lambda () (interactive) (diff-hl-show-hunk)))
+    ("q" nil :exit t))
+
+  ;; ── Tabs ──────────────────────────────────────────────────────────────────
+  ;; SPC T — two-layer tab management:
+  ;;   Buffer tabs  (awesome-tab): n/p navigate, N/P switch group, < > reorder
+  ;;   Workspace tabs (tab-bar):   c new, x close, r rename, s switch by name
+  (defhydra hydra-tabs (:hint nil)
+    "
+  Buffer tabs  _n_ next  _p_ prev  _a_ first  _e_ last  _j_ ace  _<_ move←  _>_ move→
+               _N_ next grp   _P_ prev grp   _g_ switch grp   _k_ kill others in grp
+  Workspace    _c_ new tab    _x_ close tab  _r_ rename tab   _s_ switch tab
+  Tab groups   _A_ assign grp _X_ close grp  _G_ switch grp
+  _q_ done
+"
+    ;; ── awesome-tab: buffer tabs within the current group ──────────────────
+    ("n" (lambda () (interactive) (awesome-tab-forward)))
+    ("p" (lambda () (interactive) (awesome-tab-backward)))
+    ("a" (lambda () (interactive) (awesome-tab-select-beg-tab)))
+    ("e" (lambda () (interactive) (awesome-tab-select-end-tab)))
+    ("j" (lambda () (interactive) (awesome-tab-ace-jump))          :exit t)
+    ("<" (lambda () (interactive) (awesome-tab-move-current-tab-to-left)))
+    (">" (lambda () (interactive) (awesome-tab-move-current-tab-to-right)))
+    ("N" (lambda () (interactive) (awesome-tab-forward-group)))
+    ("P" (lambda () (interactive) (awesome-tab-backward-group)))
+    ("g" (lambda () (interactive) (awesome-tab-switch-group))      :exit t)
+    ("k" (lambda () (interactive) (awesome-tab-kill-other-buffers-in-current-group)) :exit t)
+    ;; ── tab-bar: workspace tabs (window layouts) ──────────────────────────
+    ("c" (lambda () (interactive) (tab-bar-new-tab))               :exit t)
+    ("x" (lambda () (interactive) (tab-bar-close-tab))             :exit t)
+    ("r" (lambda () (interactive) (tab-bar-rename-tab nil))        :exit t)
+    ("s" (lambda () (interactive) (tab-bar-switch-to-tab
+                                   (completing-read "Switch to tab: "
+                                                    (mapcar (lambda (tab)
+                                                              (alist-get 'name tab))
+                                                            (tab-bar-tabs)))))
+     :exit t)
+    ;; ── tab-bar groups: named collections of workspace tabs (Emacs 28+) ───
+    ;; Assign the current workspace tab to a named group; tabs in the same
+    ;; group are visually clustered in the tab bar.
+    ("A" (lambda () (interactive) (tab-bar-change-tab-group
+                                   (completing-read "Assign to group: "
+                                                    (tab-bar-tab-group-names
+                                                     (tab-bar-tabs)))))
+     :exit t)
+    ("X" (lambda () (interactive) (tab-bar-close-group-tabs
+                                   (completing-read "Close group: "
+                                                    (tab-bar-tab-group-names
+                                                     (tab-bar-tabs)))))
+     :exit t)
+    ("G" (lambda () (interactive) (tab-bar-switch-to-tab
+                                   (completing-read "Switch to tab in group: "
+                                                    (mapcar (lambda (tab)
+                                                              (alist-get 'name tab))
+                                                            (tab-bar-tabs)))))
+     :exit t)
     ("q" nil :exit t)))
 
 ;;; ── General ──────────────────────────────────────────────────────────────────
@@ -100,6 +157,7 @@
     ":"   '(eval-expression           :which-key "eval expr")
     ";"   '(comment-dwim              :which-key "comment")
     "X"   '(my/health-check           :which-key "health check")
+    "k"   '(browse-kill-ring          :which-key "clipboard")
 
     ;; ── Buffers (b) ──────────────────────────────────────────────────────────
     "b"   '(:ignore t                 :which-key "buffer")
@@ -120,6 +178,8 @@
     "f R" '(my/rename-file-and-buffer :which-key "rename")
     "f y" '(my/copy-buffer-path       :which-key "copy path")
     "f i" '(my/open-init              :which-key "open init.el")
+    "f v" '(vundo                     :which-key "undo tree")
+    "f b" '(bookmark-bmenu-list       :which-key "bookmarks")
 
     ;; ── Windows (w) ──────────────────────────────────────────────────────────
     "w"   '(:ignore t                 :which-key "window")
@@ -220,6 +280,9 @@
     "h m" '(describe-mode             :which-key "mode")
     "h p" '(describe-package          :which-key "package")
     "h i" '(info                      :which-key "info")
+
+    ;; ── Tabs (T) ─────────────────────────────────────────────────────────────
+    "T"   '(hydra-tabs/body           :which-key "tabs…")
 
     ;; ── Toggle (t) ───────────────────────────────────────────────────────────
     "t"   '(:ignore t                 :which-key "toggle")
