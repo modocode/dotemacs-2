@@ -49,5 +49,76 @@
               (when (eglot-current-server)
                 (call-interactively #'eglot-reconnect)))))
 
+;;; ── Python Helpers ──────────────────────────────────────────────────────────
+
+(defun my/python-venv-create ()
+  "Create a .venv virtualenv at the project root and activate it.
+
+Uses `my/find-project-root' to locate the project. Falls back to
+`default-directory' if no root is found. After creation, pyvenv
+activates the new env and eglot reconnects to pick up the new interpreter."
+  (interactive)
+  (let* ((root (or (my/find-project-root) default-directory))
+         (venv-dir (expand-file-name ".venv" root))
+         (python (or (executable-find python-shell-interpreter)
+                     (executable-find "python3")
+                     (executable-find "python"))))
+    (unless python
+      (user-error "No Python interpreter found on exec-path"))
+    (when (file-exists-p venv-dir)
+      (unless (yes-or-no-p (format ".venv already exists at %s — recreate? " root))
+        (user-error "Aborted")))
+    (message "Creating venv at %s ..." venv-dir)
+    (let ((exit-code (call-process python nil "*python-venv-create*" t
+                                   "-m" "venv" venv-dir)))
+      (if (zerop exit-code)
+          (progn
+            (pyvenv-activate venv-dir)
+            (message "Venv created and activated: %s" venv-dir))
+        (pop-to-buffer "*python-venv-create*")
+        (user-error "venv creation failed — see *python-venv-create* buffer")))))
+
+(defun my/python-pip-install (packages)
+  "Run `pip install PACKAGES' in the active virtualenv.
+
+Prompts for a space-separated list of package names. Output appears in
+a *pip-install* compilation buffer so you can watch the progress.
+Eglot reconnects after installation so any newly installed stubs are
+picked up by the language server."
+  (interactive "sPip install packages: ")
+  (unless (string-match-p "\\S-" packages)
+    (user-error "No packages specified"))
+  (let* ((pip (or (executable-find "pip")
+                  (executable-find "pip3")))
+         (args (split-string packages))
+         (cmd  (mapconcat #'shell-quote-argument
+                          (cons pip (cons "install" args)) " ")))
+    (unless pip
+      (user-error "pip not found — is a virtualenv active?"))
+    (let ((compilation-buffer-name-function (lambda (_) "*pip-install*")))
+      (compilation-start cmd nil))
+    ;; Reconnect eglot after pip finishes so new stubs/packages are visible.
+    (add-hook 'compilation-finish-functions
+              (lambda (buf _status)
+                (when (string= (buffer-name buf) "*pip-install*")
+                  (when (eglot-current-server)
+                    (call-interactively #'eglot-reconnect))
+                  (remove-hook 'compilation-finish-functions
+                               (lambda (_b _s) nil))))
+              nil t)))
+
+;;; ── SPC m local leader bindings (Python) ───────────────────────────────────
+;; Deferred until general is loaded (keybindings.el sets up my/local-leader).
+
+(with-eval-after-load 'general
+  (with-eval-after-load 'meow
+    (my/local-leader
+      :keymaps '(python-mode-map python-ts-mode-map)
+      "v" '(my/python-venv-create  :which-key "create venv")
+      "a" '(pyvenv-activate        :which-key "activate venv")
+      "d" '(pyvenv-deactivate      :which-key "deactivate venv")
+      "p" '(my/python-pip-install  :which-key "pip install")
+      "r" '(run-python             :which-key "run REPL"))))
+
 (provide 'lang-python)
 ;;; lang-python.el ends here
