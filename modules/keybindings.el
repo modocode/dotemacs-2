@@ -60,32 +60,85 @@
     ("d" (lambda () (interactive) (diff-hl-show-hunk)))
     ("q" nil :exit t))
 
+  ;; ── Org Navigate ──────────────────────────────────────────────────────────
+  ;; SPC o g — full-spectrum org navigation that stays alive until you quit.
+  ;; Repeatable keys (headings, structure moves, link/block jumps) keep the
+  ;; hydra open; destructive or mode-switching keys (:exit t) close it.
+  (defhydra hydra-org-nav (:hint nil :foreign-keys warn)
+    "
+  ┌─────────────────────────── Org Navigate ───────────────────────────────┐
+  Headings  _n_ next       _p_ prev       _f_ → same lvl  _b_ ← same lvl
+            _u_ up level   _g_ goto…      _i_ imenu jump
+  Visible   _TAB_ cycle    _S-TAB_ global _<_ narrow      _>_ widen
+  Structure _H_ promote    _L_ demote     _J_ move ↓      _K_ move ↑
+  Links     _RET_ follow   _._ next link  _,_ prev link
+  Blocks    _]_ next blk   _[_ prev blk
+  Search    _/_ sparse     _s_ consult    _a_ agenda
+  Clock     _I_ clock in   _O_ clock out  _G_ goto clock
+  └────────────────────────────────────────────────────────────────────────┘
+  _q_ quit
+"
+    ;; ── Headings ──────────────────────────────────────────────────────────
+    ("n"   org-next-visible-heading)
+    ("p"   org-previous-visible-heading)
+    ("f"   org-forward-heading-same-level)
+    ("b"   org-backward-heading-same-level)
+    ("u"   (lambda () (interactive) (outline-up-heading 1)))
+    ("g"   org-goto                :exit t)
+    ("i"   consult-org-heading     :exit t)
+    ;; ── Visibility ────────────────────────────────────────────────────────
+    ("TAB"   org-cycle)
+    ("S-TAB" org-global-cycle)
+    ("<"   org-narrow-to-subtree   :exit t)
+    (">"   widen                   :exit t)
+    ;; ── Structure ─────────────────────────────────────────────────────────
+    ("H"   org-do-promote)
+    ("L"   org-do-demote)
+    ("J"   org-move-subtree-down)
+    ("K"   org-move-subtree-up)
+    ;; ── Links ─────────────────────────────────────────────────────────────
+    ("RET" org-open-at-point       :exit t)
+    ("."   org-next-link)
+    (","   org-previous-link)
+    ;; ── Blocks ────────────────────────────────────────────────────────────
+    ("]"   org-next-block)
+    ("["   org-previous-block)
+    ;; ── Search ────────────────────────────────────────────────────────────
+    ("/"   org-sparse-tree         :exit t)
+    ("s"   consult-org-heading     :exit t)
+    ("a"   org-agenda              :exit t)
+    ;; ── Clock ─────────────────────────────────────────────────────────────
+    ("I"   org-clock-in            :exit t)
+    ("O"   org-clock-out           :exit t)
+    ("G"   org-clock-goto          :exit t)
+    ;; ── Quit ──────────────────────────────────────────────────────────────
+    ("q"   nil                     :exit t))
+
   ;; ── Tabs ──────────────────────────────────────────────────────────────────
   ;; SPC T — two-layer tab management:
-  ;;   Buffer tabs  (awesome-tab): n/p navigate, N/P switch group, < > reorder
-  ;;   Workspace tabs (tab-bar):   c new, x close, r rename, s switch by name
+  ;;   Buffer tabs  (centaur-tabs): n/p navigate, N/P switch group, < > reorder
+  ;;   Workspace tabs (tab-bar):    c new, x close, r rename, s switch by name
   (defhydra hydra-tabs (:hint nil)
     "
-  Buffer tabs  _n_ next  _p_ prev  _a_ first  _e_ last  _j_ ace  _<_ move←  _>_ move→
+  Buffer tabs  _n_ next  _p_ prev  _a_ first  _e_ last  _<_ move←  _>_ move→
                _N_ next grp   _P_ prev grp   _g_ switch grp   _k_ kill others in grp
   Workspace    _c_ new tab    _x_ close tab  _r_ rename tab   _s_ switch tab
   Tab groups   _A_ assign grp _X_ close grp  _G_ switch grp
   _q_ done
 "
-    ;; ── awesome-tab: buffer tabs within the current group ──────────────────
-    ("n" (lambda () (interactive) (awesome-tab-forward)))
-    ("p" (lambda () (interactive) (awesome-tab-backward)))
-    ("a" (lambda () (interactive) (awesome-tab-select-beg-tab)))
-    ("e" (lambda () (interactive) (awesome-tab-select-end-tab)))
-    ("j" (lambda () (interactive) (awesome-tab-ace-jump))          :exit t)
-    ("<" (lambda () (interactive) (awesome-tab-move-current-tab-to-left)))
-    (">" (lambda () (interactive) (awesome-tab-move-current-tab-to-right)))
-    ("N" (lambda () (interactive) (awesome-tab-forward-group)))
-    ("P" (lambda () (interactive) (awesome-tab-backward-group)))
-    ("g" (lambda () (interactive) (awesome-tab-switch-group))      :exit t)
-    ("k" (lambda () (interactive) (awesome-tab-kill-other-buffers-in-current-group)) :exit t)
+    ;; ── centaur-tabs: buffer tabs within the current group ─────────────────
+    ("n" (lambda () (interactive) (centaur-tabs-forward)))
+    ("p" (lambda () (interactive) (centaur-tabs-backward)))
+    ("a" (lambda () (interactive) (centaur-tabs-select-beg-tab)))
+    ("e" (lambda () (interactive) (centaur-tabs-select-end-tab)))
+    ("<" (lambda () (interactive) (centaur-tabs-move-current-tab-to-left)))
+    (">" (lambda () (interactive) (centaur-tabs-move-current-tab-to-right)))
+    ("N" (lambda () (interactive) (centaur-tabs-forward-group)))
+    ("P" (lambda () (interactive) (centaur-tabs-backward-group)))
+    ("g" (lambda () (interactive) (centaur-tabs-switch-group)) :exit t)
+    ("k" (lambda () (interactive) (centaur-tabs-kill-other-buffers-in-current-group)) :exit t)
     ;; ── tab-bar: workspace tabs (window layouts) ──────────────────────────
-    ("c" (lambda () (interactive) (tab-bar-new-tab))               :exit t)
+    ("c" (lambda () (interactive) (centaur-tabs--create-new-tab))               :exit t)
     ("x" (lambda () (interactive) (tab-bar-close-tab))             :exit t)
     ("r" (lambda () (interactive) (tab-bar-rename-tab nil))        :exit t)
     ("s" (lambda () (interactive) (tab-bar-switch-to-tab
@@ -173,6 +226,7 @@
     "f"   '(:ignore t                 :which-key "file")
     "f f" '(find-file                 :which-key "find file")
     "f r" '(consult-recent-file       :which-key "recent files")
+    "f o" '(consult-outline           :which-key "file outline")
     "f s" '(save-buffer               :which-key "save")
     "f S" '(save-some-buffers         :which-key "save all")
     "f R" '(my/rename-file-and-buffer :which-key "rename")
@@ -234,10 +288,18 @@
     ;; ── Org & Notes (o) ──────────────────────────────────────────────────────
     "o"   '(:ignore t                 :which-key "org / notes")
     "o a" '(org-agenda                :which-key "agenda")
+    "o h" '((lambda () (interactive) (org-agenda nil "h")) :which-key "school")
+    "o e" '((lambda () (interactive) (org-agenda nil "e")) :which-key "exams")
+    "o p" '((lambda () (interactive) (org-agenda nil "p")) :which-key "projects")
+    "o L" '((lambda () (interactive) (org-agenda nil "l")) :which-key "life areas")
+    "o r" '((lambda () (interactive) (org-agenda nil "r")) :which-key "reading")
+    "o w" '((lambda () (interactive) (org-agenda nil "w")) :which-key "weekly")
+    "o q" '(org-ql-search             :which-key "ql search")
     "o c" '(org-capture               :which-key "capture")
     "o t" '(org-todo                  :which-key "todo state")
     "o s" '(org-schedule              :which-key "schedule")
     "o d" '(org-deadline              :which-key "deadline")
+    "o g" '(hydra-org-nav/body        :which-key "navigate…")
     "o n" '(denote                    :which-key "new note")
     "o l" '(denote-link               :which-key "link note")
     "o b" '(denote-backlinks          :which-key "backlinks")

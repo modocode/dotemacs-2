@@ -21,20 +21,29 @@
         tab-bar-tab-group-function      #'tab-bar-tab-group-default ; show group name in bar
         tab-bar-format                  '(tab-bar-format-tabs-groups ; grouped view
                                           tab-bar-separator))
-  (tab-bar-mode 1))
+  ;(tab-bar-mode 1)
+  )
 
-;;; ── awesome-tab buffer tabs ──────────────────────────────────────────────────
-;; Not on MELPA — must supply an explicit elpaca recipe pointing to GitHub.
+;;; Centaur-Tabs
 
-(use-package awesome-tab
-  :ensure (:host github :repo "manateelazycat/awesome-tab")
-  :demand t
+(use-package centaur-tabs
+  :ensure t
+  :demand
+  :init
+  (setq centaur-tabs-enable-key-bindings t)
   :config
-  (setq awesome-tab-style                 'wave
-        awesome-tab-height                 22
-        awesome-tab-show-tab-index         t
-        awesome-tab-buffer-groups-function #'awesome-tab-buffer-groups)
-  (awesome-tab-mode 1))
+  (setq centaur-tabs-set-icons t
+        centaur-tabs-icon-type 'all-the-icons
+	centaur-tabs-close-button "X"
+	)
+  
+  (centaur-tabs-mode t)
+  :bind
+  ("C-<prior>" . centaur-tabs-backward)
+  ("C-<next>" . centaur-tabs-forward)
+  ("C-S-<prior>" . centaur-tabs-move-current-tab-to-left)
+  ("C-S-<next>" . centaur-tabs-move-current-tab-to-right)
+  )
 
 (provide 'tabs-config)
 ;;; tabs-config.el ends here

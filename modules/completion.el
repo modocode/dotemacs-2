@@ -31,17 +31,19 @@
   :ensure t
   :demand t
   :custom
-  (setq orderless-component-separator "[[:space:]]+")
-  (setq orderless-component-separator "[ -]")
-  (setq completion-styles '(substring orderless basic))
-  ;; orderless-prefixes: each space-separated token matches the START of a
-  ;; dash/slash-separated word component.  This is what lets you type
-  ;; "tab group" and match "tab-bar-change-tab-group" — no dash required.
-  ;; orderless-flex: "tg" fuzzy-matches "tab-group" as a last resort.
+  ;; Split on spaces OR dashes so "foo bar" matches "foo-bar-baz"
+  (orderless-component-separator "[ -]")
+  (completion-styles '(orderless basic))
+  ;; orderless-prefixes: each token matches the START of a dash/slash-separated
+  ;; word component — "tab g" → "tab-group", "foo b" → "foo-bar-baz"
+  ;; orderless-flex: "tgrp" fuzzy-matches "tab-group" as a last resort
   (orderless-matching-styles
    '(orderless-prefixes   ; "tab g"  → matches "tab-group"
      orderless-literal    ; "group"  → exact substring anywhere
      orderless-flex))     ; "tgrp"   → fuzzy fallback
+  ;; Case insensitive everywhere
+  (completion-ignore-case t)
+  (read-file-name-completion-ignore-case t)
   ;; Category overrides:
   ;;   command — explicit so Emacs' own category defaults can't shadow orderless
   ;;   file    — keep basic + partial-completion for path expansion ("~/Doc/pr")

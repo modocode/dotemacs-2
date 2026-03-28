@@ -206,56 +206,28 @@ Falls back to ~/org/ on machines where org-dir has not been set."
 ;; --- Org Super Agenda
 
 (use-package org-super-agenda
-  :ensure t)
+  :ensure t
+  :demand t   ; must activate the mode before any agenda view runs
+  :config
+  (org-super-agenda-mode 1))
 
 (setq org-agenda-span 7)
 (setq org-agenda-start-on-weekday nil) ; Starts from today, not Monday
 
+;; Default groups used by the plain `org-agenda' dispatcher (SPC o a).
+;; Focused views below set their own groups via the local-var alist.
 (setq org-super-agenda-groups
-      '(;; 1. THE "NON-NEGOTIABLES"
-        (:name "🚀 Critical & Exams"
-               :priority "A"
-               :tag "exam")
-        
-        ;; 2. HEALTH & VITALITY (Gym/Health)
-        (:name "💪 Physical Lab (Health & Gym)"
-               :tag "health"
-               :regexp "gym\\|workout\\|run\\|meal prep")
-
-        ;; 3. CAREER & CONNECTIONS (Networking/Social/Orgs)
-        (:name "🤝 Networking & Social"
-               :tag ("social" "networking" "ieee" "orgs" "jobfair")
-               :regexp "out with\\|meetup\\|fair\\|club")
-
-        ;; 4. THE FORGE (Personal Projects/Portfolio)
-        (:name "🛠️ Portfolio & Projects"
-               :tag "project"
-               :and (:todo "TODO" :tag "personal"))
-
-        ;; 5. DEEP WORK (Scheduled Study Blocks)
-        (:name "🧠 Deep Work Blocks"
-               :tag "study"
-               :and (:scheduled future :regexp "Block"))
-
-        ;; 6. UNIVERSITY LOGISTICS (The "Bottlenecks")
-        (:name "🏫 UTA Admin & Logistics"
-               :tag ("work" "housing" "finance")
-               :discard (:tag "homework")) ;; Keep logistics separate from actual study
-
-        ;; 7. ACADEMICS (Grouped by Subject)
-        (:name "📐 Math & Physics"
-               :tag ("calc" "diffeq" "phys"))
-        (:name "🔌 Engineering Labs"
-               :tag ("ee1106" "ee1201" "ee2301"))
-
-        ;; 8. PURCHASING & LOGS
-        (:name "🛒 Gear & Orders"
-               :regexp "Buy\\|Order\\|Purchase")
-        
-        (:name "✅ Wins Today"
-               :log t)
-
-        ;; Catch-all for everything else
+      '((:name "🚀 Critical & Exams"    :priority "A" :tag "exam")
+        (:name "💪 Health & Gym"         :tag "health" :regexp "gym\\|workout\\|run")
+        (:name "🤝 Networking & Social"  :tag ("social" "networking" "ieee" "orgs"))
+        (:name "🛠️  Portfolio & Projects" :tag "project")
+        (:name "🧠 Deep Work Blocks"     :tag "study" :regexp "Block")
+        (:name "🏫 UTA Admin"            :tag ("work" "housing" "finance")
+               :discard (:tag "homework"))
+        (:name "📐 Math & Physics"       :tag ("calc" "diffeq" "phys"))
+        (:name "🔌 Engineering Labs"     :tag ("ee1106" "ee1201" "ee2301"))
+        (:name "🛒 Gear & Orders"        :regexp "Buy\\|Order\\|Purchase")
+        (:name "✅ Wins Today"           :log t)
         (:auto-group t)))
 
 ;; --- Org Superstar
@@ -316,40 +288,119 @@ Falls back to ~/org/ on machines where org-dir has not been set."
   :bind ("M-s a" . my-consult-org-ql-agenda-jump))
 
 
-;; --- Custom Agenda View
+;; --- Custom Agenda Views
+;;
+;; ── Tag Registers ─────────────────────────────────────────────────────────
+;; These two strings are the ONLY things you edit each semester.
+;; Add/remove course tags here and all views update automatically.
+;; Use the org match-string syntax: tags separated by | (OR) or & (AND).
+
+(defvar my/school-tags
+  "homework|assignment|exam|lab|study|calc|phys|diffeq|ee1106|ee1201|ee2301|college"
+  "Org tags match-string for all school work.
+Edit this at the start of each semester — all school views derive from it.")
+
+(defvar my/life-tags
+  "health|social|admin|career|self|finance|home|growth|org"
+  "Org tags match-string for life areas (from org-tag-alist).
+Add new life domains here and they appear in SPC o l automatically.")
+
+;; ── Build Commands ────────────────────────────────────────────────────────
+;; Backtick + comma splices the defvar values in at load time so the match
+;; strings are always in sync with the registers above.
+;; After editing a register, reload with: SPC e b (eval-buffer) or SPC q r.
 
 (setq org-agenda-custom-commands
-	  '(("s" "School & Life Dashboard"
-		 ((org-ql-block '(and (todo "TODO" "NEXT")
-							  (deadline today))
-						((org-ql-block-header "🔥 DUE TODAY")))
+      `(
+        ;; ── h: School / Homework ──────────────────────────────────────────
+        ;; Groups: overdue → today → exams → labs → per-course (auto-parent).
+        ;; `:auto-parent t` reads the parent heading ("Calc", "Physics", etc.)
+        ;; so a new course you add in gtd.org shows up as its own group here
+        ;; with zero config changes.
+        ("h" "📚 School Work"
+         ((tags-todo ,my/school-tags
+                     ((org-super-agenda-groups
+                       '((:name "🔥 Overdue"          :deadline past)
+                         (:name "⚡ Due Today"         :deadline today)
+                         (:name "🧪 Exams"             :tag "exam")
+                         (:name "🔬 Lab Reports"       :tag "lab")
+                         (:name "🚧 Blocked"           :todo "BLOCKED")
+                         (:auto-parent t)))
+                      (org-agenda-sorting-strategy
+                       '(deadline-up priority-down todo-state-up))))))
 
-          (org-ql-block '(and (todo "TODO" "NEXT")
-                              (tags "school")
-                              (not (deadline <= today)))
-                        ((org-ql-block-header "📚 Upcoming School Work")))
+        ;; ── e: Exam Tracker ───────────────────────────────────────────────
+        ;; All exam-tagged items sorted soonest-first. Review tasks without
+        ;; a deadline float to the bottom so you notice them.
+        ("e" "🧪 Exam Tracker"
+         ((tags-todo "exam"
+                     ((org-super-agenda-groups
+                       '((:name "🔥 Overdue Prep"     :deadline past)
+                         (:name "⚡ Exam Today"        :deadline today)
+                         (:name "📅 Coming Up"         :deadline future)
+                         (:name "❓ No Deadline Set"   :deadline nil)
+                         (:discard (:anything t))))
+                      (org-agenda-sorting-strategy '(deadline-up priority-down))))))
 
-          (org-ql-block '(and (todo "NEXT")
-                              (not (tags "school")))
-                        ((org-ql-block-header "⚡ Personal Next Actions")))
+        ;; ── l: Life Areas ─────────────────────────────────────────────────
+        ;; Covers everything outside school: health, admin, career, social…
+        ;; Add a new life-area tag to my/life-tags and it appears here.
+        ("l" "🌿 Life Areas"
+         ((tags-todo ,my/life-tags
+                     ((org-super-agenda-groups
+                       '((:name "🚨 Urgent"            :priority "A")
+                         (:name "💪 Health & Gym"      :tag "health")
+                         (:name "💼 Career"            :tag "career")
+                         (:name "🤝 Social"            :tag "social")
+                         (:name "📋 Admin & Finance"   :tag ("admin" "finance"))
+                         (:name "🏠 Home"              :tag "home")
+                         (:name "🌱 Growth"            :tag ("growth" "self"))
+                         (:auto-tags t)))
+                      (org-agenda-sorting-strategy
+                       '(priority-down deadline-up todo-state-up))))))
 
-          (agenda "" ((org-agenda-span 7)
-                      (org-agenda-overriding-header "📅 Weekly Overview")))
+        ;; ── p: Projects ───────────────────────────────────────────────────
+        ;; All project-tagged items grouped by parent section so each project
+        ;; gets its own bucket. Sort by priority within each group.
+        ("p" "🛠 Projects"
+         ((tags-todo "project"
+                     ((org-super-agenda-groups
+                       '((:name "🚨 Urgent"            :priority "A")
+                         (:auto-parent t)))
+                      (org-agenda-sorting-strategy
+                       '(priority-down deadline-up))))))
 
-          (org-ql-block '(and (todo "WAITING"))
-                        ((org-ql-block-header "⏳ Waiting on Others")))))
+        ;; ── r: Reading List ───────────────────────────────────────────────
+        ;; Flat priority-sorted list of everything to read.
+        ("r" "📖 Reading List"
+         ((tags-todo "reading"
+                     ((org-super-agenda-groups
+                       '((:name "Read Next"  :priority "A")
+                         (:name "Backlog"    :priority< "A")
+                         (:discard (:anything t))))
+                      (org-agenda-sorting-strategy '(priority-down))))))
 
+        ;; ── w: Weekly Overview ────────────────────────────────────────────
+        ;; 7-day calendar view with default org-super-agenda-groups.
+        ;; Good for morning planning — shows everything across all areas.
+        ("w" "📅 Weekly Overview"
+         ((agenda "" ((org-agenda-span 7)
+                      (org-agenda-start-on-weekday nil)
+                      (org-agenda-overriding-header "")))))
+
+        ;; ── 5: Big 5 Life Areas (org-ql version) ─────────────────────────
+        ;; Fixed: was using todo "NEXT" which doesn't exist — now uses "START".
         ("5" "The Big 5 Areas"
-         ((org-ql-block '(and (todo "NEXT") (tags "health"))
+         ((org-ql-block '(and (todo "TODO" "START") (tags "health"))
                         ((org-ql-block-header "🍎 Health & Vitality")))
-          (org-ql-block '(and (todo "NEXT") (tags "finance"))
+          (org-ql-block '(and (todo "TODO" "START") (tags "career" "finance"))
                         ((org-ql-block-header "💰 Finance & Career")))
-          (org-ql-block '(and (todo "NEXT") (tags "growth"))
+          (org-ql-block '(and (todo "TODO" "START") (tags "growth" "self"))
                         ((org-ql-block-header "🧠 Personal Growth")))
-          (org-ql-block '(and (todo "NEXT") (tags "social"))
+          (org-ql-block '(and (todo "TODO" "START") (tags "social"))
                         ((org-ql-block-header "🤝 Relationships/Social")))
-          (org-ql-block '(and (todo "NEXT") (tags "home"))
-                        ((org-ql-block-header "🏠 Home & Environment")))))))
+          (org-ql-block '(and (todo "TODO" "START") (tags "home" "admin"))
+                        ((org-ql-block-header "🏠 Home & Admin")))))))
 
 
 ;; --- Structure Templates
