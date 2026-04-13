@@ -11,11 +11,12 @@
   (zenburn-scale-org-headlines t)
   (zenburn-scale-outline-headlines t))
 
-;; modus-themes ships built-in with Emacs 29+.  Using :ensure nil prevents
-;; elpaca from installing a second copy, which would cause a byte-compiled
-;; macro mismatch and break startup with an eager-macroexpand error.
+;; Use the elpaca-managed modus-themes (not the built-in Emacs 29 copy).
+;; ef-themes calls `modus-themes-declare' at load time, which only exists in
+;; the newer elpaca version.  The old :ensure nil / macro-mismatch concern is
+;; moot now that all stale .elc files have been cleared.
 (use-package modus-themes
-  :ensure nil
+  :ensure t
   :custom
   (modus-themes-mixed-fonts t)
   (modus-themes-italic-constructs t)

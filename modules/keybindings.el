@@ -114,6 +114,67 @@
     ;; ── Quit ──────────────────────────────────────────────────────────────
     ("q"   nil                     :exit t))
 
+  ;; ── Org Table ─────────────────────────────────────────────────────────────
+  ;; SPC o T — stay in the hydra to navigate and reshape tables; destructive
+  ;; or mode-switching actions (:exit t) close it automatically.
+  (defhydra hydra-org-table (:hint nil :foreign-keys warn)
+    "
+  ┌─────────────────────────── Org Table ──────────────────────────────┐
+  Navigate  _n_ next fld   _p_ prev fld   _j_ next row   _RET_ new row
+  Move      _H_ col ←      _L_ col →      _J_ row ↓      _K_ row ↑
+  Insert    _r_ ins row    _c_ ins col
+  Delete    _R_ del row    _C_ del col    _b_ blank fld
+  Compute   _a_ align      _=_ formula    _*_ recalc     _s_ sort
+  └────────────────────────────────────────────────────────────────────┘
+  _q_ quit
+"
+    ;; ── Navigate ──────────────────────────────────────────────────────────
+    ("n"   org-table-next-field)
+    ("p"   org-table-previous-field)
+    ("j"   (lambda () (interactive) (org-table-next-row)))
+    ("RET" org-table-next-row)
+    ;; ── Move ──────────────────────────────────────────────────────────────
+    ("H"   org-table-move-column-left)
+    ("L"   org-table-move-column-right)
+    ("J"   org-table-move-row-down)
+    ("K"   org-table-move-row-up)
+    ;; ── Insert / Delete ───────────────────────────────────────────────────
+    ("r"   org-table-insert-row)
+    ("R"   org-table-kill-row)
+    ("c"   org-table-insert-column)
+    ("C"   org-table-delete-column)
+    ("b"   org-table-blank-field)
+    ;; ── Compute ───────────────────────────────────────────────────────────
+    ("a"   org-table-align)
+    ("="   org-table-eval-formula     :exit t)
+    ("*"   (lambda () (interactive) (org-table-recalculate t)))
+    ("s"   org-table-sort-lines       :exit t)
+    ;; ── Quit ──────────────────────────────────────────────────────────────
+    ("q"   nil                        :exit t))
+
+  ;; ── Window Rotate ─────────────────────────────────────────────────────────
+  ;; SPC w t — cycle and set window layouts using emacs-rotate.
+  ;; `r' and `w' repeat without closing the hydra; layout setters exit since
+  ;; they replace the entire arrangement and you rarely want to chain them.
+  (defhydra hydra-window-rotate (:hint nil)
+    "
+  ┌─────────────────── Window Rotate ───────────────────────┐
+  Cycle   _r_ rotate layouts   _w_ rotate windows (swap)
+  Set     _h_ even horizontal  _v_ even vertical
+          _H_ main horizontal  _V_ main vertical
+          _t_ tiled
+  └─────────────────────────────────────────────────────────┘
+  _q_ done
+"
+    ("r" rotate-layout)
+    ("w" rotate-window)
+    ("h" rotate:even-horizontal   :exit t)
+    ("v" rotate:even-vertical     :exit t)
+    ("H" rotate:main-horizontal   :exit t)
+    ("V" rotate:main-vertical     :exit t)
+    ("t" rotate:tiled             :exit t)
+    ("q" nil                      :exit t))
+
   ;; ── Tabs ──────────────────────────────────────────────────────────────────
   ;; SPC T — two-layer tab management:
   ;;   Buffer tabs  (centaur-tabs): n/p navigate, N/P switch group, < > reorder
@@ -166,7 +227,29 @@
                                                               (alist-get 'name tab))
                                                             (tab-bar-tabs)))))
      :exit t)
-    ("q" nil :exit t)))
+    ("q" nil :exit t))
+
+  ;; ── Embark ────────────────────────────────────────────────────────────────
+  ;; SPC a . — quick access to all embark entry points without memorising
+  ;; the individual keys.  embark-act / embark-dwim are the two you'll hit
+  ;; most often; the rest are for collect/export workflows.
+  (defhydra hydra-embark (:hint nil :foreign-keys warn)
+    "
+  ┌────────────────────────── Embark ──────────────────────────────┐
+  Act      _a_ act on target    _d_ dwim (default action)
+  Collect  _c_ collect          _l_ collect live    _e_ export
+  Browse   _b_ show bindings    _s_ isearch forward
+  └────────────────────────────────────────────────────────────────┘
+  _q_ quit
+"
+    ("a" embark-act              :exit t)  ; opens embark's own action menu
+    ("d" embark-dwim             :exit t)  ; performs the single most-likely action
+    ("c" embark-collect          :exit t)  ; snapshot candidates → *Embark Collect*
+    ("l" embark-live-collect     :exit t)  ; live-updating collect buffer (tracks minibuffer)
+    ("e" embark-export           :exit t)  ; export to grep-mode, dired, etc.
+    ("b" embark-bindings         :exit t)  ; describe all available actions
+    ("s" embark-isearch-forward  :exit t)  ; isearch using current embark target as seed
+    ("q" nil                     :exit t)))
 
 ;;; ── General ──────────────────────────────────────────────────────────────────
 ;; general.el is the standard way to define evil leader bindings.
@@ -247,8 +330,9 @@
     "w l" '(windmove-right            :which-key "go →")
     "w a" '(ace-window                :which-key "ace jump")
     "w =" '(balance-windows           :which-key "balance")
-    "w r" '(hydra-window-resize/body  :which-key "resize…")
-    "w z" '(hydra-text-scale/body     :which-key "zoom…")
+    "w r" '(hydra-window-resize/body       :which-key "resize…")
+    "w z" '(hydra-text-scale/body          :which-key "zoom…")
+    "w t" '(hydra-window-rotate/body       :which-key "rotate…")
 
     ;; ── Jump (j) — avy ───────────────────────────────────────────────────────
     "j"   '(:ignore t                 :which-key "jump")
@@ -300,6 +384,7 @@
     "o s" '(org-schedule              :which-key "schedule")
     "o d" '(org-deadline              :which-key "deadline")
     "o g" '(hydra-org-nav/body        :which-key "navigate…")
+    "o T" '(hydra-org-table/body      :which-key "table…")
     "o n" '(denote                    :which-key "new note")
     "o l" '(denote-link               :which-key "link note")
     "o b" '(denote-backlinks          :which-key "backlinks")
@@ -342,6 +427,15 @@
     "h m" '(describe-mode             :which-key "mode")
     "h p" '(describe-package          :which-key "package")
     "h i" '(info                      :which-key "info")
+
+    ;; ── Actions / Embark (a) ─────────────────────────────────────────────────
+    "a"   '(:ignore t                 :which-key "actions / embark")
+    "a ." '(hydra-embark/body         :which-key "embark menu…")
+    "a a" '(embark-act                :which-key "act")
+    "a d" '(embark-dwim               :which-key "dwim")
+    "a c" '(embark-collect            :which-key "collect")
+    "a e" '(embark-export             :which-key "export")
+    "a b" '(embark-bindings           :which-key "bindings")
 
     ;; ── Tabs (T) ─────────────────────────────────────────────────────────────
     "T"   '(hydra-tabs/body           :which-key "tabs…")

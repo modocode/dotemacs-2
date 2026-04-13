@@ -118,9 +118,11 @@
 (use-package embark
   :ensure t
   :bind
-  (("C-,"   . embark-act)
-   ("C-M-," . embark-dwim)
-   ("C-h B" . embark-bindings))
+  (("C-,"   . embark-act)          ; act on thing at point / minibuffer candidate
+   ("C-M-," . embark-dwim)         ; default action (jump to def, open file, etc.)
+   ("C-h B" . embark-bindings)     ; describe all embark actions in a buffer
+   ("C-c e" . embark-collect)      ; snapshot current candidates into a collect buffer
+   ("C-c E" . embark-export))      ; export candidates to a specialised buffer (grep, dired…)
   :config
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -135,8 +137,6 @@
   (embark-collect-mode . consult-preview-at-point-mode))
 
 
-;;; Bookmarks
-(keymap-set bookmark-bmenu-mode-map "C-o" #'casual-bookmarks-tmenu)
 
 (provide 'completion-config)
 ;;; completion.el ends here

@@ -21,10 +21,12 @@ Falls back to ~/org/ on machines where org-dir has not been set."
   ;; blows up on a machine where you haven't set up notes-dir yet.
   (setq org-directory (my/path 'org-dir "~/org/"))
 
-  ;; `my/path-list' builds the list and silently drops any key that is not
-  ;; registered, so agenda won't complain about a missing notes folder on a
-  ;; machine where you haven't created it.
-  (setq org-agenda-files (my/path-list 'org-dir 'notes-dir))
+  ;; Defer agenda file resolution until after os/*.el has run.
+  ;; Without this hook, os/windows.el registers "N:/" AFTER modules/ loads,
+  ;; so my/path-list captures the ~/org defaults instead of the real paths.
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (setq org-agenda-files (my/path-list 'org-dir 'notes-dir))))
 
   ;; ── Editing Behaviour ────────────────────────────────────────────────────
   (setq org-M-RET-may-split-line    '((default . nil)))
@@ -425,8 +427,7 @@ Add new life domains here and they appear in SPC o l automatically.")
    ("C-c n d" . denote-dired)
    ("C-c n g" . denote-grep))
   :config
-  (setq org-agenda-files (my/path-list 'org-dir 'notes-dir))
-  (setq denote-directory (my/path-list 'notes-dir))
+  (setq denote-directory (my/path 'notes-dir "~/notes/"))
   (setq denote-known-keywords '("school" "project" "philsophy" "self"))
 
   ;; Automatically rename Denote buffers when opening them so that

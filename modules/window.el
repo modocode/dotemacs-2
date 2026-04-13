@@ -37,4 +37,7 @@
   )
 
 
+(use-package rotate :ensure t)
+
+
 (provide 'window)

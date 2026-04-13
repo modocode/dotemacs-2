@@ -15,7 +15,7 @@
 ;; Defer theme loading until elpaca has finished building all packages.
 ;; Calling load-theme here directly fails on first run because gruvbox-theme
 ;; hasn't been installed yet when os/windows.el loads.
-(add-hook 'elpaca-after-init-hook (lambda () (load-theme 'gruvbox t)))
+;;(add-hook 'elpaca-after-init-hook (lambda () (load-theme 'gruvbox t)))
 
 ;; Sync exec-path from the Windows PATH environment variable.
 ;; Emacs launched from a shortcut/Start menu often inherits a stripped PATH
@@ -66,8 +66,9 @@
     (setenv "PATH" (concat candidate ";" (getenv "PATH")))))
 
 ;; Org paths on network drive
-(my/register-path 'org-dir   "N:/")
-(my/register-path 'notes-dir "N:/")
+(my/register-path 'org-dir    "N:/")
+(my/register-path 'notes-dir  "N:/notes/")
+(my/register-path 'career-dir "N:/career/")
 
 
 ;; Fonts for this machine.

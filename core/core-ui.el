@@ -21,7 +21,14 @@
           (my/set-face-font 'variable-pitch "Source Serif 4" 130)
           (my/set-face-font 'variable-pitch "Georgia" 130)))))
 
-(load-theme 'modus-vivendi t)
+;; Always skip the "Really load?" and "Treat as safe?" prompts.
+;; custom-safe-themes='all suppresses the check, but if something resets it
+;; between early-init and an interactive M-x load-theme call, Emacs tries
+;; (cons new-hash 'all) → improper list → apply error.  This advice ensures
+;; no-confirm is always t regardless of custom-safe-themes state.
+(advice-add 'load-theme :around
+  (lambda (fn theme &optional _no-confirm no-enable)
+    (funcall fn theme t no-enable)))
 
 ;; Enable variable-pitch-mode in text and Org buffers so prose uses the
 ;; variable-pitch face while code blocks stay in fixed-pitch.
