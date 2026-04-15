@@ -1153,6 +1153,39 @@ Right: primed.org in overview mode."
         (special-mode)
         (pop-to-buffer (current-buffer))))))
 
+;;; ── Bill of Materials ────────────────────────────────────────────────────────
+
+(defconst career--bom-header
+  "| Part No. | Description | Manufacturer | Package | Designator | Qty | Unit Price | Real Price | URL |
+|----------+-------------+--------------+---------+------------+-----+------------+------------+-----|
+|          |             |              |         |            |   1 |       0.00 |       0.00 |     |
+#+TBLFM: $8=$6*$7"
+  "Skeleton org table for a bill of materials.
+Columns: Part No., Description, Manufacturer, Package, Designator,
+         Qty, Unit Price, Real Price (=Qty×Unit), URL.
+#+TBLFM recalculates Real Price automatically (C-c C-c on the TBLFM line).")
+
+(defun career/new-bom (name)
+  "Insert a Bill of Materials org table headed by NAME at point.
+If the buffer is visiting a file, the table is inserted there.
+Otherwise a temporary *BOM* buffer is opened."
+  (interactive "sBOM name (e.g. project or assembly): ")
+  (let ((insert-bom
+         (lambda ()
+           (insert (format "** BOM — %s\n" name))
+           (insert career--bom-header)
+           (insert "\n"))))
+    (if buffer-file-name
+        (progn
+          (funcall insert-bom)
+          (message "BOM inserted — press C-c C-c on the #+TBLFM line to recalculate."))
+      (let ((buf (get-buffer-create (format "*BOM: %s*" name))))
+        (switch-to-buffer buf)
+        (org-mode)
+        (funcall insert-bom)
+        (goto-char (point-min))
+        (message "BOM in temp buffer — C-c C-c on #+TBLFM to recalculate.")))))
+
 ;;; ── Capture templates + keybindings ─────────────────────────────────────────
 ;; Both are deferred to elpaca-after-init-hook, which fires after ALL packages
 ;; are fully loaded and configured.  This avoids two race conditions:
@@ -1241,6 +1274,7 @@ Right: primed.org in overview mode."
               "C I" '(career/prep-for-interview  :which-key "interview prep")
               "C e" '(career/skill-evidence      :which-key "skill evidence")
               "C r" '(career/update-result       :which-key "log result")
+              "C b" '(career/new-bom            :which-key "new BOM table")
               "C c" '(org-capture                :which-key "capture")
 
               "P"   '(:ignore t                  :which-key "PRIMED")
