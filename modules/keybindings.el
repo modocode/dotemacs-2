@@ -389,6 +389,15 @@
     "o l" '(denote-link               :which-key "link note")
     "o b" '(denote-backlinks          :which-key "backlinks")
 
+    ;; ── Refile & Archive ─────────────────────────────────────────────────────
+    ;; Workflow: capture → Inbox (SPC o c t t), process Inbox (SPC o i),
+    ;; refile each item (SPC o R), archive completed section (SPC o x).
+    "o R" '(org-refile                 :which-key "refile…")
+    "o i" '(my/org-process-inbox       :which-key "inbox")
+    "o S" '(my/org-refile-to-someday   :which-key "→ someday")
+    "o A" '(org-archive-subtree        :which-key "archive")
+    "o x" '(my/org-archive-done-items  :which-key "archive done")
+
     ;; ── Log / Clock (l) ──────────────────────────────────────────────────────
     "l"   '(:ignore t                      :which-key "log / clock")
     "l l" '(hydra-clock/body               :which-key "clock menu…")
@@ -446,6 +455,12 @@
     "t w" '(visual-line-mode          :which-key "word wrap")
     "t t" '(load-theme                :which-key "load theme")
     "t d" '(toggle-debug-on-error     :which-key "debug on error")
+
+    ;; ── Feeds (r) — elfeed ───────────────────────────────────────────────────
+    "r"   '(:ignore t               :which-key "feeds")
+    "r r" '(elfeed                  :which-key "open elfeed")
+    "r u" '(elfeed-update           :which-key "update feeds")
+    "r R" '(my/elfeed-mark-all-read :which-key "mark all read")
 
     ;; ── Quit (q) ─────────────────────────────────────────────────────────────
     "q"   '(:ignore t                 :which-key "quit")

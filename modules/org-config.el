@@ -99,7 +99,7 @@ Falls back to ~/org/ on machines where org-dir has not been set."
            "* %<%H:%M> Daily Review\n  1. What went well today?\n     %?\n  2. What could be improved?\n     \n")
 
           ;; --- Project Management Group ---
-          ("s" "Someday/Maybe" entry (file+headline ,(my/org-file "gtd.org") "Someday")
+          ("s" "Someday/Maybe" entry (file+headline ,(my/org-file "someday.org") "Someday/Maybe")
            "* %?\n:PROPERTIES:\n:ENTERED: %U\n:END:\n\n%i")
 
           ("p" "Universal Project Mission" entry
@@ -415,6 +415,123 @@ Add new life domains here and they appear in SPC o l automatically.")
 
 ;; --- Denote
 
+
+;; ── Refile Configuration ─────────────────────────────────────────────────────
+;; The GTD refile workflow:
+;;   1. Capture everything to * Inbox in gtd.org (SPC o c t t)
+;;   2. Process inbox periodically: SPC o i  → opens Inbox narrowed
+;;   3. For each item: SPC o t (state) · SPC o s (schedule) · SPC o R (refile)
+;;   4. Quick-refile to Someday: SPC o S  (no completion prompt)
+;;   5. At end of semester / week: SPC o x  (archive all DONE under point)
+;;
+;; After adding a new heading to any file in org-refile-targets, run
+;;   M-x my/org-refile-reset-cache  (or SPC o R c) to rebuild the list.
+
+(with-eval-after-load 'org
+
+  ;; Targets: the three main GTD files, up to 3 heading levels deep.
+  (setq org-refile-targets
+        `((,(my/org-file "gtd.org")      :maxlevel . 3)
+          (,(my/org-file "projects.org") :maxlevel . 2)
+          (,(my/org-file "someday.org")  :maxlevel . 2)))
+
+  ;; Show the full heading path in the minibuffer (e.g. "Work/Homework/Calc").
+  ;; Without this, many headings share the same name and look identical.
+  (setq org-refile-use-outline-path t)
+
+  ;; Complete the full path in one step — don't navigate component by component.
+  ;; Vertico/consult filter the whole string at once, so per-step navigation
+  ;; is just extra friction.
+  (setq org-outline-path-complete-in-steps nil)
+
+  ;; Ask for confirmation before creating a new parent node during refile.
+  ;; Lets you create a new project or course bucket on the fly.
+  (setq org-refile-allow-creating-parent-nodes 'confirm)
+
+  ;; Cache targets between sessions so the minibuffer appears immediately.
+  ;; Invalidate with my/org-refile-reset-cache after restructuring a file.
+  (setq org-refile-use-cache t)
+
+  ;; Archive location: one archive.org, each source file gets its own heading.
+  ;; Items from gtd.org land under "* gtd.org Archive" so origin is always clear.
+  (setq org-archive-location
+        (concat (my/org-file "archive.org") "::* %s Archive")))
+
+
+;; ── Refile helpers ───────────────────────────────────────────────────────────
+
+(defun my/org-refile-reset-cache ()
+  "Clear the org-refile target cache.
+Run after adding or renaming headings in any file in `org-refile-targets'."
+  (interactive)
+  (org-refile-cache-clear)
+  (message "org-refile cache cleared — targets will rescan on next refile."))
+
+(defun my/org-refile-to-heading (file heading)
+  "Refile the entry at point to HEADING in FILE without interactive prompts.
+Signals a user-error if HEADING is not found in FILE."
+  (let* ((buf (find-file-noselect file))
+         (pos (with-current-buffer buf
+                (save-excursion
+                  (goto-char (point-min))
+                  (when (re-search-forward
+                         (format "^\\*+ %s" (regexp-quote heading))
+                         nil t)
+                    (match-beginning 0))))))
+    (if pos
+        (org-refile nil nil (list heading file nil pos))
+      (user-error "Heading %S not found in %s"
+                  heading (file-name-nondirectory file)))))
+
+(defun my/org-refile-to-someday ()
+  "Refile the current heading to * Someday/Maybe in someday.org (no prompts)."
+  (interactive)
+  (my/org-refile-to-heading (my/org-file "someday.org") "Someday/Maybe"))
+
+(defun my/org-refile-to-inbox ()
+  "Refile the current heading back to * Inbox in gtd.org (no prompts).
+Useful for sending something back to triage after it no longer fits its section."
+  (interactive)
+  (my/org-refile-to-heading (my/org-file "gtd.org") "Inbox"))
+
+(defun my/org-archive-done-items ()
+  "Archive all DONE and CANCELLED subtrees under the heading at point.
+Each item is moved to `org-archive-location' with its full context preserved.
+Useful for cleaning up a course or project section at the end of a semester."
+  (interactive)
+  (save-excursion
+    (org-map-entries
+     (lambda ()
+       (org-archive-subtree)
+       (setq org-map-continue-from (outline-previous-heading)))
+     "/DONE|/CANCELLED"
+     'tree)))
+
+(defun my/org-process-inbox ()
+  "Open gtd.org narrowed to * Inbox for GTD triage.
+
+For each item:
+  SPC o t    change TODO state (e.g. TODO → START or CANCELLED)
+  SPC o s    add a SCHEDULED date
+  SPC o d    add a DEADLINE
+  SPC o R    refile to its proper section (full path completion via vertico)
+  SPC o S    refile straight to Someday/Maybe (no prompts)
+  SPC >      widen back to the full file when finished"
+  (interactive)
+  (find-file (my/org-file "gtd.org"))
+  (widen)
+  (goto-char (point-min))
+  (if (re-search-forward "^\\* Inbox" nil t)
+      (progn
+        (org-narrow-to-subtree)
+        (goto-char (point-min))
+        (org-overview)
+        (message
+         "Inbox: SPC o R = refile  ·  SPC o S = someday  ·  SPC o t = state  ·  SPC > = widen"))
+    (message "No '* Inbox' heading found in %s." (my/org-file "gtd.org"))))
+
+
+;; ── Denote ───────────────────────────────────────────────────────────────────
 
 (use-package denote
   :ensure t
