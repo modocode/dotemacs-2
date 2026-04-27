@@ -140,7 +140,7 @@ Use this for drop-in directories: drop a .el file in, restart Emacs, done."
 ;; elpaca activates its managed modus-themes build and pulls in the stale
 ;; built-in copy instead.
 (elpaca-wait)
-(load-theme 'modus-operandi-tinted t)
+;;(load-theme 'modus-operandi-tinted t)
 
 ;;; ── OS-Specific Config ──────────────────────────────────────────────────────
 ;; Load exactly ONE file based on `my/system-config-path' set above.

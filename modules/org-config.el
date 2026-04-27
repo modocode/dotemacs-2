@@ -10,7 +10,7 @@
 (defun my/org-file (name)
   "Return the full path to NAME within the registered org-dir.
 Falls back to ~/org/ on machines where org-dir has not been set."
-  (concat (file-name-as-directory (my/path 'org-dir "~/org/")) name))
+  (concat (file-name-as-directory (my/path 'org-dir)) name))
 
 (use-package org
   :ensure nil   ; org is built-in; elpaca should not manage it
@@ -19,7 +19,7 @@ Falls back to ~/org/ on machines where org-dir has not been set."
   ;; ── Paths (machine-specific values live in os/*.el) ─────────────────────
   ;; `my/path' expands ~ and returns nil if the key has no entry, so nothing
   ;; blows up on a machine where you haven't set up notes-dir yet.
-  (setq org-directory (my/path 'org-dir "~/org/"))
+  (setq org-directory (my/path 'org-dir ))
 
   ;; Defer agenda file resolution until after os/*.el has run.
   ;; Without this hook, os/windows.el registers "N:/" AFTER modules/ loads,
