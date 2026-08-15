@@ -9,11 +9,16 @@
   (require 'smartparens-config))
 
 
+
 (use-package yasnippet
   :ensure t
   :demand t   ; yas-global-mode in :config requires eager load
   :config
   (use-package yasnippet-snippets :ensure t)
+  (global-set-key (kbd "C-c y") #'yas-insert-snippet )
+  ;; (add-hook 'nix-mode
+  ;; 	    (lambda ()
+  ;; 	      (local-set-key (kbd "C-c y") #'yas-insert-snippet)))
 
   ;; Add the repo-tracked custom snippets dir (not gitignored like etc/).
   ;; Prepend so our snippets take priority over yasnippet-snippets on collision.

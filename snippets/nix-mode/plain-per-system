@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: nix-per-system-package
+# key: nixpkg
+# --
+
+{
+  perSystem =
+    { pkgs, ... }:
+    {
+      packages.${1:foo} = pkgs.${2:${1}};
+    };
+}

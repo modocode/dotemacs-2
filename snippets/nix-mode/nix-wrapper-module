@@ -1,0 +1,28 @@
+# -*- mode: snippet -*-
+# name: nix-wrapper-module-package
+# key: nixwrap
+# --
+
+{ inputs, moduleWithSystem, ... }:
+
+{
+  flake.nixosModules.${1:name} = moduleWithSystem (
+    { self', ... }:
+
+    { ... }:
+    {
+      ${2}
+    }
+  );
+
+  perSystem =
+    { pkgs, ... }:
+    {
+      packages.${3:my${1}} =
+        inputs.wrapper-modules.wrappers.${4:${1}}.wrap {
+          inherit pkgs;
+
+          ${0}
+        };
+    };
+}

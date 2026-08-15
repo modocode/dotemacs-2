@@ -1,537 +1,705 @@
-;;; modules/org.el --- Org-mode configuration -*- lexical-binding: t; -*-
+;;; modules/org.el --- Universal Org-mode life system -*- lexical-binding: t; -*-
 ;;
-;; Paths are resolved through the mo-paths registry (mo-lisp/mo-paths.el)
-;; so this file never needs to change between machines.
+;; Universal Org architecture:
 ;;
-;; To customise paths for your machine, open your os/ file and call:
-;;   (my/register-path 'org-dir   "~/wherever/org/")
-;;   (my/register-path 'notes-dir "~/wherever/notes/")
+;;   org/
+;;   ├── inbox.org
+;;   ├── agenda.org
+;;   ├── projects.org
+;;   ├── someday.org
+;;   ├── reference.org
+;;   ├── journal.org
+;;   ├── areas/
+;;   │   ├── education.org
+;;   │   ├── finance.org
+;;   │   ├── career.org
+;;   │   ├── health.org
+;;   │   ├── personal.org
+;;   │   ├── relationships.org
+;;   │   └── home.org
+;;   ├── courses/
+;;   │   ├── circuits.org
+;;   │   ├── digital-systems.org
+;;   │   ├── physics.org
+;;   │   └── chemistry.org
+;;   └── archive/
+;;
+;; Machine-specific paths are resolved through the mo-paths registry.
+;; Example:
+;;   (my/register-path 'org-dir   "~/org/")
+;;   (my/register-path 'notes-dir "~/notes/")
+;;
+;; Philosophy:
+;;
+;;   Areas      = ongoing responsibilities.
+;;   Projects   = finite outcomes requiring multiple actions.
+;;   Actions    = things that can actually be done.
+;;   Reference  = information with no action attached.
+;;   Someday    = deliberately inactive possibilities.
+;;   Agenda     = time-sensitive and recurring commitments.
+;;   Journal    = historical record.
+;;   Denote     = durable knowledge / permanent notes.
+;;
+;; Workflow:
+;;
+;;   capture -> inbox -> clarify -> refile -> agenda -> execute -> review -> archive
+;;
+
+;;; ---------------------------------------------------------------------------
+;;; Paths
+;;; ---------------------------------------------------------------------------
 
 (defun my/org-file (name)
   "Return the full path to NAME within the registered org-dir.
-Falls back to ~/org/ on machines where org-dir has not been set."
-  (concat (file-name-as-directory (my/path 'org-dir)) name))
+Falls back through `my/path' according to the rest of this configuration."
+  (expand-file-name name (my/path 'org-dir)))
+
+(defun my/org-files-recursively (directory)
+  "Return all .org files recursively beneath DIRECTORY."
+  (when (file-directory-p directory)
+    (directory-files-recursively directory "\\.org\\'")))
+
+(defun my/org-active-files ()
+  "Return files that should participate in the active Org agenda."
+  (delete-dups
+   (append
+    (mapcar #'my/org-file
+            '("inbox.org"
+              "agenda.org"
+              "projects.org"))
+    (my/org-files-recursively (my/org-file "areas"))
+    (my/org-files-recursively (my/org-file "courses")))))
+
+(defun my/org-refile-files ()
+  "Return every file that may receive an Org refile."
+  (delete-dups
+   (append
+    (mapcar #'my/org-file
+            '("projects.org"
+              "someday.org"
+              "reference.org"
+              "agenda.org"))
+    (my/org-files-recursively (my/org-file "areas"))
+    (my/org-files-recursively (my/org-file "courses")))))
+
+(defun my/org-refresh-agenda-files ()
+  "Rebuild `org-agenda-files' from the universal Org system."
+  (interactive)
+  (setq org-agenda-files (my/org-active-files))
+  (message "Org agenda files refreshed (%d files)." (length org-agenda-files)))
+
+(defun my/org-refresh-refile-targets ()
+  "Rebuild `org-refile-targets' from active Org destinations."
+  (interactive)
+  (setq org-refile-targets
+        (mapcar (lambda (file)
+                  (cons file '(:maxlevel . 4)))
+                (my/org-refile-files)))
+  (when (fboundp 'org-refile-cache-clear)
+    (org-refile-cache-clear))
+  (message "Org refile targets refreshed."))
+
+(defun my/org-create-system-directories ()
+  "Create the standard Org directories if they do not already exist."
+  (interactive)
+  (dolist (directory
+           (list (my/org-file "areas")
+                 (my/org-file "courses")
+                 (my/org-file "archive")))
+    (make-directory directory t))
+  (message "Org system directories are ready."))
+
+;;; ---------------------------------------------------------------------------
+;;; Core Org
+;;; ---------------------------------------------------------------------------
 
 (use-package org
-  :ensure nil   ; org is built-in; elpaca should not manage it
+  :ensure nil
+  :init
+
+  (setq org-directory (my/path 'org-dir))
+
   :config
 
-  ;; ── Paths (machine-specific values live in os/*.el) ─────────────────────
-  ;; `my/path' expands ~ and returns nil if the key has no entry, so nothing
-  ;; blows up on a machine where you haven't set up notes-dir yet.
-  (setq org-directory (my/path 'org-dir ))
+  ;; Create the directory skeleton, but never overwrite files.
+  (my/org-create-system-directories)
 
-  ;; Defer agenda file resolution until after os/*.el has run.
-  ;; Without this hook, os/windows.el registers "N:/" AFTER modules/ loads,
-  ;; so my/path-list captures the ~/org defaults instead of the real paths.
-  (add-hook 'emacs-startup-hook
-            (lambda ()
-              (setq org-agenda-files (my/path-list 'org-dir 'notes-dir))))
+  ;; Resolve dynamic file sets only after the machine-specific path registry
+  ;; has been initialized.
+  (add-hook 'emacs-startup-hook #'my/org-refresh-agenda-files)
+  (add-hook 'emacs-startup-hook #'my/org-refresh-refile-targets)
 
-  ;; ── Editing Behaviour ────────────────────────────────────────────────────
-  (setq org-M-RET-may-split-line    '((default . nil)))
-  (setq org-insert-heading-respect-content t)
-  (setq org-log-into-drawer          t)
+  ;; Editing behavior.
+  (setq org-M-RET-may-split-line '((default . nil))
+        org-insert-heading-respect-content t
+        org-log-into-drawer t
+        org-log-done 'time
+        org-log-reschedule 'time
+        org-log-redeadline 'time
+        org-use-fast-todo-selection t
+        org-enforce-todo-dependencies t
+        org-enforce-todo-checkbox-dependencies t)
 
-  ;; Will set org-todo-keywords after watching gtd jjo
+  ;; Agenda semantics.
+  (setq org-agenda-span 7
+        org-agenda-start-on-weekday nil
+        org-deadline-warning-days 14
+        org-agenda-skip-deadline-if-done t
+        org-agenda-skip-scheduled-if-done t
+        org-agenda-skip-timestamp-if-done t)
 
-  ;; ── Capture Templates ────────────────────────────────────────────────────
-  ;; All file paths go through my/org-file so they resolve against org-dir,
-  ;; which is set per-machine in os/*.el (e.g. "N:/" on Windows).
-  (setq org-capture-templates
-        `(("t" "Tasks")
-          ("tt" "Inbox Task" entry (file+headline ,(my/org-file "gtd.org") "Inbox")
-           "* TODO %^{Task Name} %^G\n  %U\n  %i"
-           :empty-lines 1 :kill-buffer t)
+  ;; Persistent IDs make links survive refiles and file moves.
+  (setq org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id)
 
-          ("tw" "Work Task" entry (file+headline ,(my/org-file "gtd.org") "Work")
-           "* TODO %^{Task Name} :work:\n  SCHEDULED: %t\n  %a"
-           :empty-lines 1)
+  ;; Appearance / editing.
+  (setq org-adapt-indentation t
+        org-hide-leading-stars t
+        org-hide-emphasis-markers t
+        org-pretty-entities t
+        org-ellipsis " ▼ "
+        org-src-fontify-natively t
+        org-src-tab-acts-natively t
+        org-edit-src-content-indentation 0
+        org-highlight-latex-and-related '(native script entities))
 
-          ("ti" "Immediate/Urgent" entry (file+headline ,(my/org-file "gtd.org") "Inbox")
-           "* TODO [#A] %^{Task Name} :urgent:\n  SCHEDULED: %t\n"
-           :immediate-finish t)
+  ;; Standard effort estimates.
+  (setq org-global-properties
+        '(("Effort_ALL" .
+           "0:05 0:10 0:15 0:25 0:30 0:45 1:00 1:30 2:00 3:00 4:00")))
 
-          ;; --- Group 2: Contextual & Reading ---
-          ("r" "Reference/Reading")
+  ;; Clocking.
+  (setq org-clock-into-drawer t
+        org-clock-out-remove-zero-time-clocks t
+        org-clock-persist t
+        org-clock-history-length 30
+        org-clock-in-resume t
+        org-clock-report-include-clocking-task t)
 
-          ("rl" "Link to Read" entry (file+headline ,(my/org-file "gtd.org") "Reading List")
-           "* TODO Read: %:description\n  Source: %u\n  %c\n  %a"
-           :empty-lines 1)
+  (org-clock-persistence-insinuate)
 
-          ("rc" "Code Snippet" entry (file+headline ,(my/org-file "gtd.org") "Resources")
-           "* %^{Description} :code:\n#+BEGIN_SRC %^{Language}\n%i\n#+END_SRC\n  Source: %a")
+  ;; Habits.
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 50
+        org-habit-preceding-days 21
+        org-habit-following-days 7)
 
-          ;; --- Group 3: Life Maintenance (Health & Admin) ---
-          ("l" "Life")
-          ("lh" "Health/Gym" entry (file+headline ,(my/org-file "gtd.org") "Health")
-           "* TODO %^{Workout/Health Task} :health:\n  SCHEDULED: %^t\n  %?"
-           :empty-lines 1)
-          ("la" "Admin/Finance" entry (file+headline ,(my/org-file "gtd.org") "Admin")
-           "* TODO %^{Admin Task} :admin:\n  DEADLINE: %^t\n  %?"
-           :empty-lines 1)
-          ("ln" "Networking/Social" entry (file+headline ,(my/org-file "gtd.org") "Social")
-           "* TODO %^{Event/Meetup} :social:org:\n  SCHEDULED: %^t\n  %?"
-           :empty-lines 1)
+  ;; Refile behavior.
+  (setq org-refile-use-outline-path 'file
+        org-outline-path-complete-in-steps nil
+        org-refile-allow-creating-parent-nodes 'confirm
+        org-refile-use-cache t)
 
-          ;; --- Group n: Information ---
-          ("i" "Information")
+  ;; Archive each source file into org/archive/.
+  ;;
+  ;; Example:
+  ;;   courses/circuits.org
+  ;;       -> archive/circuits.org_archive
+  ;;
+  ;; `%s' expands to the source filename.
+  (setq org-archive-location
+        (concat
+         (file-name-as-directory (my/org-file "archive"))
+         "%s_archive::"))
 
-          ("in" "New Info" entry (file+headline ,(my/org-file "gtd.org") "Info")
-           "* %?\n:PROPERTIES:\n:SOURCE: %^{Source URL|Manual}\n:CAPTURED: %U\n:END:\n\n%i"
-           :empty-lines 1)
-          ("it" "Tech Tip" entry (file+headline ,(my/org-file "gtd.org") "Info")
-           "* %? :TECH:\n:PROPERTIES:\n:LANGUAGE: %^{Language}\n:CAPTURED: %U\n:END:\n\n#+BEGIN_SRC %\\1\n%i\n#+END_SRC"
-           :empty-lines 1)
-          ("if" "Quick Fact" entry (file+headline ,(my/org-file "gtd.org") "Info")
-           "* %^{Fact About}: %?\n  :PROPERTIES:\n  :CAPTURED: %U\n  :END:"
-           :immediate-finish t)
-          ("iq" "Quote" entry (file+headline ,(my/org-file "gtd.org") "Info")
-           "* Quote by %^{Author} :QUOTE:\n  %U\n  #+BEGIN_QUOTE\n  %i%?\n  #+END_QUOTE")
+  ;; Babel.
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (python     . t)
+     (C          . t)
+     (shell      . t)
+     (octave     . t))))
 
-          ;; --- Group 4: Journal & Reviews ---
-          ("j" "Journaling")
-
-          ("jj" "Journal Entry" entry (file+datetree ,(my/org-file "journal.org"))
-           "* %<%H:%M> %^{Title}\n  %?")
-
-          ("jr" "Daily Review" entry (file+datetree ,(my/org-file "journal.org"))
-           "* %<%H:%M> Daily Review\n  1. What went well today?\n     %?\n  2. What could be improved?\n     \n")
-
-          ;; --- Project Management Group ---
-          ("s" "Someday/Maybe" entry (file+headline ,(my/org-file "someday.org") "Someday/Maybe")
-           "* %?\n:PROPERTIES:\n:ENTERED: %U\n:END:\n\n%i")
-
-          ("p" "Universal Project Mission" entry
-           (file+headline ,(my/org-file "projects.org") "Missions")
-           "* MISSION: %^{Project Name} :SYSTEMS_ENG:
-		    :PROPERTIES:
-		    :ID:       %(shell-command-to-string \"uuidgen\" | tr -d '\\n')
-		    :CREATED:  %U
-		    :STATUS:   INITIATING
-		    :CATEGORY: %^{Category|Lab|Invention|Personal|Software}
-		    :END:
-
-		    ,** 1. CONOPS (Concept of Operations)
-		    - **Primary Intent:** %^{What is the singular purpose of this creation?}
-		    - **Operating Environment:** %^{Where/When will this exist? (e.g., local server, outdoor, lab)}
-		    - **The 'Impossible' Constraint:** %^{What is the bottleneck we are breaking?}
-
-		    ,** 2. ARCHITECTURAL DECOMPOSITION (The V-Model)
-		    - [ ] [MODULE-A]: %^{Physical or Logic Layer 1}
-		    - [ ] [MODULE-B]: %^{Physical or Logic Layer 2}
-		    - [ ] [INTERFACE]: %^{How do these modules exchange energy/data/force?}
-
-		    ,** 3. PERFORMANCE REQUIREMENTS (Success Metrics)
-		    | Parameter        | Target/Baseline | Actual Result | Status |
-		    |------------------+-----------------+---------------+--------|
-		    | Metric 1 (Main)  | %^{Target}      |               | PEND   |
-		    | Metric 2 (Const) |                 |               | PEND   |
-		    | Metric 3 (Efficiency) |             |               | PEND   |
-
-		    ,** 4. THE EXECUTION LOOP (Cybernetic Log)
-		    ,#+BEGIN_QUOTE
-		    \"A system is only as good as its feedback.\"
-		    ,#+END_QUOTE
-		    %?
-
-		    ,** 5. V&V (Verification & Validation)
-		    - [ ] **Verification:** Did the build match the blueprint?
-		    - [ ] **Validation:** Does the blueprint actually solve the user's problem?
-		    - [ ] **Recursive Shift:** What is the 10x version of this system?
-
-		    ,** 6. KNOWLEDGE EXTRACTION (Resume/Portfolio)
-		    - **Challenge:** %^{The core problem faced}
-		    - **Action:** Implemented %\\1 using %^{Primary Tools/Methods}.
-		    - **Result:** %^{Quantifiable outcome (%, $, Time, Speed)}."
-           ))))
-
-;; --- Org Todo
+;;; ---------------------------------------------------------------------------
+;;; TODO workflows
+;;; ---------------------------------------------------------------------------
 
 (setq org-todo-keywords
-      '((sequence "TODO(t)" "START(s!)" "BLOCKED(b@/!)" "REVIEW(v!)" "DOC(d!)" "|" "DONE(0!)" "CANCELLED(c@)")))
+      '((sequence
+         "TODO(t)"
+         "NEXT(n)"
+         "WAIT(w@/!)"
+         "HOLD(h@/!)"
+         "|"
+         "DONE(d!)"
+         "CANCELLED(c@/!)")
+
+        (sequence
+         "QUESTION(q)"
+         "|"
+         "ANSWERED(a!)")
+
+        (sequence
+         "REVIEW(r)"
+         "|"
+         "REVIEWED(R!)")))
 
 (setq org-todo-keyword-faces
-      '(("TODO" . (:foreground "orange" :weight bold))
-        ("START" . (:foreground "cyan" :weight bold))
-        ("BLOCKED" . (:foreground "red" :weight bold))
-        ("REVIEW" . (:foreground "magenta" :weight bold))
-        ("DOC" . (:foreground "yellow" :weight bold))
-        ("DONE" . (:foreground "green" :weight bold))
-        ("CANCELLED" . (:foreground "gray" :weight bold))))
-(setq org-use-fast-todo-selection t)
+      '(("TODO"      . (:foreground "orange"  :weight bold))
+        ("NEXT"      . (:foreground "cyan"    :weight bold))
+        ("WAIT"      . (:foreground "yellow"  :weight bold))
+        ("HOLD"      . (:foreground "gray"    :weight bold))
+        ("QUESTION"  . (:foreground "magenta" :weight bold))
+        ("ANSWERED"  . (:foreground "green"   :weight bold))
+        ("REVIEW"    . (:foreground "magenta" :weight bold))
+        ("REVIEWED"  . (:foreground "green"   :weight bold))
+        ("DONE"      . (:foreground "green"   :weight bold))
+        ("CANCELLED" . (:foreground "gray"    :weight bold))))
 
+;;; ---------------------------------------------------------------------------
+;;; Tags
+;;; ---------------------------------------------------------------------------
 
-;; --- Org Tagging
-
-(setq org-tag-alist '((:startgroup . nil)
-                      ("study" . ?s) ("assignment" . ?a) ("exam" . ?e) ("lab" . ?l)
-                      (:endgroup . nil)
-                      (:startgroup . nil)
-                      ("project" . ?p) ("career" . ?c) ("org" . ?o)
-                      (:endgroup . nil)
-                      ("health" . ?h) ("social" . ?z) ("admin" . ?m)))
-
-
-;; --- Org Styling
-
-(setq org-adapt-indentation t
-      org-hide-leading-stars t
-      org-hide-emphasis-markers t
-      org-pretty-entities t
-	  org-ellipsis "  ·")
-
-(setq org-src-fontify-natively t
-	  org-src-tab-acts-natively t
-      org-edit-src-content-indentation 0)
-
-;; --- Org Modern
-
-(use-package org-modern
-  :ensure t
-  :demand t   ; :config must run at startup so global-org-modern-mode activates
-  :custom
-  (org-auto-align-tags              t)
-  (org-tags-column                  0)
-  (org-fold-catch-invisible-edits   'show-and-error)
-  (org-special-ctrl-a/e             t)
-  (org-insert-heading-respect-content t)
-  ;; Don't style these — org-superstar handles bullets/todo markers
-  (org-modern-tag      nil)
-  (org-modern-priority nil)
-  (org-modern-todo     nil)
-  :config
-  (global-org-modern-mode))
-
-
-
-;; --- Org Super Agenda
-
-(use-package org-super-agenda
-  :ensure t
-  :demand t   ; must activate the mode before any agenda view runs
-  :config
-  (org-super-agenda-mode 1))
-
-(setq org-agenda-span 7)
-(setq org-agenda-start-on-weekday nil) ; Starts from today, not Monday
-
-;; Default groups used by the plain `org-agenda' dispatcher (SPC o a).
-;; Focused views below set their own groups via the local-var alist.
-(setq org-super-agenda-groups
-      '((:name "🚀 Critical & Exams"    :priority "A" :tag "exam")
-        (:name "💪 Health & Gym"         :tag "health" :regexp "gym\\|workout\\|run")
-        (:name "🤝 Networking & Social"  :tag ("social" "networking" "ieee" "orgs"))
-        (:name "🛠️  Portfolio & Projects" :tag "project")
-        (:name "🧠 Deep Work Blocks"     :tag "study" :regexp "Block")
-        (:name "🏫 UTA Admin"            :tag ("work" "housing" "finance")
-               :discard (:tag "homework"))
-        (:name "📐 Math & Physics"       :tag ("calc" "diffeq" "phys"))
-        (:name "🔌 Engineering Labs"     :tag ("ee1106" "ee1201" "ee2301"))
-        (:name "🛒 Gear & Orders"        :regexp "Buy\\|Order\\|Purchase")
-        (:name "✅ Wins Today"           :log t)
-        (:auto-group t)))
-
-;; --- Org Superstar
-(use-package org-superstar
-  :ensure t
-  :hook (org-mode . org-superstar-mode)
-  :config
-;;(setq org-superstar-leading-bullet " ")
-; Set different bullets, with one getting a terminal fallback.
-(setq org-superstar-headline-bullets-list
-      '("◉" ("🞛" ?◈) "○" "▷"))
-(setq org-superstar-special-todo-items t) ;; Makes TODO header bullets into boxes
-(setq org-superstar-todo-bullet-alist '(("TODO" . 9744)
-                                        ("DONE" . 9744)
-                                        ("READ" . 9744)
-                                        ("IDEA" . 9744)
-                                        ("WAITING" . 9744)
-                                        ("CANCELLED" . 9744)
-                                        ("PROJECT" . 9744)
-                                        ("POSTPONED" . 9744)))
-)
-
-(with-eval-after-load 'org-superstar
-  (setq org-superstar-item-bullet-alist
-        '((?* . ?•)
-          (?+ . ?➤)
-          (?- . ?•)))
-  (setq org-superstar-headline-bullets-list '(?\d))
-  (setq org-superstar-special-todo-items t)
-  (setq org-superstar-remove-leading-stars t)
-  (setq org-hide-leading-stars t)
-  ;; Enable custom bullets for TODO items
-  (setq org-superstar-todo-bullet-alist
-        '(("TODO" . ?☐)
-          ("NEXT" . ?✒)
-          ("HOLD" . ?✰)
-          ("WAITING" . ?☕)
-          ("CANCELLED" . ?✘)
-          ("DONE" . ?✔)))
-  (org-superstar-restart))
-(setq org-ellipsis " ▼ ")
-
-
-;; --- Evil Org (restores TAB=org-cycle and other keys overridden by evil-collection)
-
-(use-package evil-org
-  :ensure t
-  :after (evil org)
-  :hook (org-mode . evil-org-mode)
-  :config
-  (evil-org-set-key-theme '(navigation insert textobjects additional calendar)))
-
-
-;; --- Org Ql
-
-(use-package org-ql
-  :ensure t
-  :bind ("M-s a" . my-consult-org-ql-agenda-jump))
-
-
-;; --- Custom Agenda Views
+;; Tags describe context/type.  The file/category describes the domain.
 ;;
-;; ── Tag Registers ─────────────────────────────────────────────────────────
-;; These two strings are the ONLY things you edit each semester.
-;; Add/remove course tags here and all views update automatically.
-;; Use the org match-string syntax: tags separated by | (OR) or & (AND).
+;; Examples:
+;;   circuits.org      => Circuits
+;;   finance.org       => Finance
+;;
+;; Tags answer orthogonal questions such as:
+;;   Where can this be done?
+;;   What sort of attention does it require?
 
-(defvar my/school-tags
-  "homework|assignment|exam|lab|study|calc|phys|diffeq|ee1106|ee1201|ee2301|college"
-  "Org tags match-string for all school work.
-Edit this at the start of each semester — all school views derive from it.")
+(setq org-tag-alist
+      '((:startgroup)
+        ("@home"     . ?h)
+        ("@campus"   . ?c)
+        ("@computer" . ?o)
+        ("@lab"      . ?l)
+        ("@errand"   . ?e)
+        ("@phone"    . ?p)
+        (:endgroup)
 
-(defvar my/life-tags
-  "health|social|admin|career|self|finance|home|growth|org"
-  "Org tags match-string for life areas (from org-tag-alist).
-Add new life domains here and they appear in SPC o l automatically.")
+        ("deep"       . ?d)
+        ("quick"      . ?q)
+        ("reading"    . ?r)
+        ("exam"       . ?x)
+        ("assignment" . ?a)
+        ("project"    . ?j)
+        ("meeting"    . ?m)
+        ("routine"    . ?u)))
 
-;; ── Build Commands ────────────────────────────────────────────────────────
-;; Backtick + comma splices the defvar values in at load time so the match
-;; strings are always in sync with the registers above.
-;; After editing a register, reload with: SPC e b (eval-buffer) or SPC q r.
+;;; ---------------------------------------------------------------------------
+;;; Capture
+;;; ---------------------------------------------------------------------------
 
-(setq org-agenda-custom-commands
+;; Capture is intentionally context-light.
+;; Most items enter inbox.org and are classified during inbox processing.
+
+(setq org-capture-templates
       `(
-        ;; ── h: School / Homework ──────────────────────────────────────────
-        ;; Groups: overdue → today → exams → labs → per-course (auto-parent).
-        ;; `:auto-parent t` reads the parent heading ("Calc", "Physics", etc.)
-        ;; so a new course you add in gtd.org shows up as its own group here
-        ;; with zero config changes.
-        ("h" "📚 School Work"
-         ((tags-todo ,my/school-tags
-                     ((org-super-agenda-groups
-                       '((:name "🔥 Overdue"          :deadline past)
-                         (:name "⚡ Due Today"         :deadline today)
-                         (:name "🧪 Exams"             :tag "exam")
-                         (:name "🔬 Lab Reports"       :tag "lab")
-                         (:name "🚧 Blocked"           :todo "BLOCKED")
-                         (:auto-parent t)))
-                      (org-agenda-sorting-strategy
-                       '(deadline-up priority-down todo-state-up))))))
+        ;; Actions -------------------------------------------------------------
 
-        ;; ── e: Exam Tracker ───────────────────────────────────────────────
-        ;; All exam-tagged items sorted soonest-first. Review tasks without
-        ;; a deadline float to the bottom so you notice them.
-        ("e" "🧪 Exam Tracker"
-         ((tags-todo "exam"
-                     ((org-super-agenda-groups
-                       '((:name "🔥 Overdue Prep"     :deadline past)
-                         (:name "⚡ Exam Today"        :deadline today)
-                         (:name "📅 Coming Up"         :deadline future)
-                         (:name "❓ No Deadline Set"   :deadline nil)
-                         (:discard (:anything t))))
-                      (org-agenda-sorting-strategy '(deadline-up priority-down))))))
+        ("t" "Task"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* TODO %^{Task}\n:PROPERTIES:\n:CREATED: %U\n:END:\n%?"
+         :empty-lines 1)
 
-        ;; ── l: Life Areas ─────────────────────────────────────────────────
-        ;; Covers everything outside school: health, admin, career, social…
-        ;; Add a new life-area tag to my/life-tags and it appears here.
-        ("l" "🌿 Life Areas"
-         ((tags-todo ,my/life-tags
-                     ((org-super-agenda-groups
-                       '((:name "🚨 Urgent"            :priority "A")
-                         (:name "💪 Health & Gym"      :tag "health")
-                         (:name "💼 Career"            :tag "career")
-                         (:name "🤝 Social"            :tag "social")
-                         (:name "📋 Admin & Finance"   :tag ("admin" "finance"))
-                         (:name "🏠 Home"              :tag "home")
-                         (:name "🌱 Growth"            :tag ("growth" "self"))
-                         (:auto-tags t)))
-                      (org-agenda-sorting-strategy
-                       '(priority-down deadline-up todo-state-up))))))
+        ("n" "Next Action"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* NEXT %^{Action}\n:PROPERTIES:\n:CREATED: %U\n:END:\n%?"
+         :empty-lines 1)
 
-        ;; ── p: Projects ───────────────────────────────────────────────────
-        ;; All project-tagged items grouped by parent section so each project
-        ;; gets its own bucket. Sort by priority within each group.
-        ("p" "🛠 Projects"
-         ((tags-todo "project"
-                     ((org-super-agenda-groups
-                       '((:name "🚨 Urgent"            :priority "A")
-                         (:auto-parent t)))
-                      (org-agenda-sorting-strategy
-                       '(priority-down deadline-up))))))
+        ;; Education accelerators ---------------------------------------------
 
-        ;; ── r: Reading List ───────────────────────────────────────────────
-        ;; Flat priority-sorted list of everything to read.
-        ("r" "📖 Reading List"
-         ((tags-todo "reading"
-                     ((org-super-agenda-groups
-                       '((:name "Read Next"  :priority "A")
-                         (:name "Backlog"    :priority< "A")
-                         (:discard (:anything t))))
-                      (org-agenda-sorting-strategy '(priority-down))))))
+        ("a" "Assignment"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* TODO %^{Assignment} :assignment:\nDEADLINE: %^t\n:PROPERTIES:\n:COURSE: %^{Course}\n:CREATED: %U\n:Effort: %^{Estimated effort|1:00}\n:END:\n%?"
+         :empty-lines 1)
 
-        ;; ── w: Weekly Overview ────────────────────────────────────────────
-        ;; 7-day calendar view with default org-super-agenda-groups.
-        ;; Good for morning planning — shows everything across all areas.
-        ("w" "📅 Weekly Overview"
-         ((agenda "" ((org-agenda-span 7)
-                      (org-agenda-start-on-weekday nil)
-                      (org-agenda-overriding-header "")))))
+        ("x" "Exam"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* TODO %^{Exam} :exam:\nDEADLINE: %^t\n:PROPERTIES:\n:COURSE: %^{Course}\n:CREATED: %U\n:END:\n%?"
+         :empty-lines 1)
 
-        ;; ── 5: Big 5 Life Areas (org-ql version) ─────────────────────────
-        ;; Fixed: was using todo "NEXT" which doesn't exist — now uses "START".
-        ("5" "The Big 5 Areas"
-         ((org-ql-block '(and (todo "TODO" "START") (tags "health"))
-                        ((org-ql-block-header "🍎 Health & Vitality")))
-          (org-ql-block '(and (todo "TODO" "START") (tags "career" "finance"))
-                        ((org-ql-block-header "💰 Finance & Career")))
-          (org-ql-block '(and (todo "TODO" "START") (tags "growth" "self"))
-                        ((org-ql-block-header "🧠 Personal Growth")))
-          (org-ql-block '(and (todo "TODO" "START") (tags "social"))
-                        ((org-ql-block-header "🤝 Relationships/Social")))
-          (org-ql-block '(and (todo "TODO" "START") (tags "home" "admin"))
-                        ((org-ql-block-header "🏠 Home & Admin")))))))
+        ;; Learning / knowledge gaps ------------------------------------------
 
+        ("q" "Question"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* QUESTION %^{Question}\n:PROPERTIES:\n:CREATED: %U\n:END:\n%?"
+         :empty-lines 1)
 
-;; --- Structure Templates
+        ("r" "Review / Weakness"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* REVIEW %^{Topic}\n:PROPERTIES:\n:CREATED: %U\n:END:\n%?"
+         :empty-lines 1)
 
-(with-eval-after-load 'org
-  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python"))
-  (add-to-list 'org-structure-template-alist '("cpp" . "src C++"))
-  (add-to-list 'org-structure-template-alist '("rs" . "src rust")))
+        ("l" "Reading / Link"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* TODO Read: %:description :reading:\n:PROPERTIES:\n:CREATED: %U\n:END:\n%a\n%?"
+         :empty-lines 1)
 
-;; --- Denote
+        ;; Events --------------------------------------------------------------
 
+        ("e" "Event"
+         entry
+         (file ,(my/org-file "inbox.org"))
+         "* %^{Event}\n%^T\n%?"
+         :empty-lines 1)
 
-;; ── Refile Configuration ─────────────────────────────────────────────────────
-;; The GTD refile workflow:
-;;   1. Capture everything to * Inbox in gtd.org (SPC o c t t)
-;;   2. Process inbox periodically: SPC o i  → opens Inbox narrowed
-;;   3. For each item: SPC o t (state) · SPC o s (schedule) · SPC o R (refile)
-;;   4. Quick-refile to Someday: SPC o S  (no completion prompt)
-;;   5. At end of semester / week: SPC o x  (archive all DONE under point)
-;;
-;; After adding a new heading to any file in org-refile-targets, run
-;;   M-x my/org-refile-reset-cache  (or SPC o R c) to rebuild the list.
+        ;; Reference -----------------------------------------------------------
 
-(with-eval-after-load 'org
+        ("i" "Information"
+         entry
+         (file ,(my/org-file "reference.org"))
+         "* %^{Title}\n:PROPERTIES:\n:CAPTURED: %U\n:SOURCE: %^{Source|Manual}\n:END:\n%?"
+         :empty-lines 1)
 
-  ;; Targets: the three main GTD files, up to 3 heading levels deep.
-  (setq org-refile-targets
-        `((,(my/org-file "gtd.org")      :maxlevel . 3)
-          (,(my/org-file "projects.org") :maxlevel . 2)
-          (,(my/org-file "someday.org")  :maxlevel . 2)))
+        ;; Journal -------------------------------------------------------------
 
-  ;; Show the full heading path in the minibuffer (e.g. "Work/Homework/Calc").
-  ;; Without this, many headings share the same name and look identical.
-  (setq org-refile-use-outline-path t)
+        ("j" "Journal"
+         entry
+         (file+olp+datetree ,(my/org-file "journal.org"))
+         "* %<%H:%M> %^{Title}\n%?"
+         :tree-type week)
 
-  ;; Complete the full path in one step — don't navigate component by component.
-  ;; Vertico/consult filter the whole string at once, so per-step navigation
-  ;; is just extra friction.
-  (setq org-outline-path-complete-in-steps nil)
+        ;; Someday -------------------------------------------------------------
 
-  ;; Ask for confirmation before creating a new parent node during refile.
-  ;; Lets you create a new project or course bucket on the fly.
-  (setq org-refile-allow-creating-parent-nodes 'confirm)
+        ("s" "Someday"
+         entry
+         (file ,(my/org-file "someday.org"))
+         "* %^{Idea}\n:PROPERTIES:\n:CREATED: %U\n:END:\n%?"
+         :empty-lines 1)
 
-  ;; Cache targets between sessions so the minibuffer appears immediately.
-  ;; Invalidate with my/org-refile-reset-cache after restructuring a file.
-  (setq org-refile-use-cache t)
+        ;; Projects ------------------------------------------------------------
 
-  ;; Archive location: one archive.org, each source file gets its own heading.
-  ;; Items from gtd.org land under "* gtd.org Archive" so origin is always clear.
-  (setq org-archive-location
-        (concat (my/org-file "archive.org") "::* %s Archive")))
+        ("p" "Projects")
 
+        ("pp" "Normal Project"
+         entry
+         (file+headline ,(my/org-file "projects.org") "Active")
+         "* TODO %^{Outcome} :project:\n:PROPERTIES:\n:CREATED: %U\n:AREA: %^{Area}\n:END:\n\n** NEXT %?"
+         :empty-lines 1)
 
-;; ── Refile helpers ───────────────────────────────────────────────────────────
+        ;; Your systems-engineering / portfolio-oriented project template.
+        ("pe" "Engineering Project"
+         entry
+         (file+headline ,(my/org-file "projects.org") "Engineering")
+         "* TODO %^{Project Name} :project:SYSTEMS_ENG:\n:PROPERTIES:\n:ID: %(org-id-new)\n:CREATED: %U\n:STATUS: INITIATING\n:CATEGORY: %^{Category|Lab|Invention|Personal|Software|Hardware|Research}\n:END:\n\n** 1. CONOPS (Concept of Operations)\n- *Primary Intent:* %^{What is the singular purpose of this creation?}\n- *Operating Environment:* %^{Where/when will this exist?}\n- *Primary Constraint:* %^{What is the main bottleneck or constraint?}\n\n** 2. ARCHITECTURAL DECOMPOSITION\n- [ ] [MODULE-A]: %^{Physical or logic layer 1}\n- [ ] [MODULE-B]: %^{Physical or logic layer 2}\n- [ ] [INTERFACE]: %^{How do these modules exchange energy/data/force?}\n\n** 3. PERFORMANCE REQUIREMENTS\n| Parameter              | Target/Baseline | Actual Result | Status |\n|------------------------+-----------------+---------------+--------|\n| Metric 1 (Primary)     | %^{Target}      |               | PEND   |\n| Metric 2 (Constraint)  |                 |               | PEND   |\n| Metric 3 (Efficiency)  |                 |               | PEND   |\n\n** 4. EXECUTION / ENGINEERING LOG\n%?\n\n** 5. VERIFICATION & VALIDATION\n- [ ] *Verification:* Did the implementation match the specification?\n- [ ] *Validation:* Does the resulting system solve the intended problem?\n- [ ] *Next Iteration:* What would materially improve the next version?\n\n** 6. KNOWLEDGE EXTRACTION / PORTFOLIO\n- *Challenge:* %^{The core problem faced}\n- *Action:* %^{What was implemented and how?}\n- *Result:* %^{Quantifiable outcome}\n"
+         :empty-lines 1)))
+
+;;; ---------------------------------------------------------------------------
+;;; Refile helpers
+;;; ---------------------------------------------------------------------------
 
 (defun my/org-refile-reset-cache ()
-  "Clear the org-refile target cache.
-Run after adding or renaming headings in any file in `org-refile-targets'."
+  "Clear the Org refile target cache."
   (interactive)
   (org-refile-cache-clear)
-  (message "org-refile cache cleared — targets will rescan on next refile."))
+  (message "Org refile cache cleared."))
 
 (defun my/org-refile-to-heading (file heading)
-  "Refile the entry at point to HEADING in FILE without interactive prompts.
-Signals a user-error if HEADING is not found in FILE."
+  "Refile the entry at point to HEADING in FILE without prompts."
   (let* ((buf (find-file-noselect file))
-         (pos (with-current-buffer buf
-                (save-excursion
-                  (goto-char (point-min))
-                  (when (re-search-forward
-                         (format "^\\*+ %s" (regexp-quote heading))
-                         nil t)
-                    (match-beginning 0))))))
+         (pos
+          (with-current-buffer buf
+            (save-excursion
+              (goto-char (point-min))
+              (when (re-search-forward
+                     (format "^\\*+ %s" (regexp-quote heading))
+                     nil t)
+                (match-beginning 0))))))
     (if pos
         (org-refile nil nil (list heading file nil pos))
       (user-error "Heading %S not found in %s"
-                  heading (file-name-nondirectory file)))))
+                  heading
+                  (file-name-nondirectory file)))))
 
 (defun my/org-refile-to-someday ()
-  "Refile the current heading to * Someday/Maybe in someday.org (no prompts)."
+  "Refile the current heading into someday.org."
   (interactive)
-  (my/org-refile-to-heading (my/org-file "someday.org") "Someday/Maybe"))
+  (org-refile nil nil
+              (list nil
+                    (my/org-file "someday.org")
+                    nil
+                    (with-current-buffer
+                        (find-file-noselect (my/org-file "someday.org"))
+                      (point-min)))))
 
 (defun my/org-refile-to-inbox ()
-  "Refile the current heading back to * Inbox in gtd.org (no prompts).
-Useful for sending something back to triage after it no longer fits its section."
+  "Refile the current heading into inbox.org."
   (interactive)
-  (my/org-refile-to-heading (my/org-file "gtd.org") "Inbox"))
+  (org-refile nil nil
+              (list nil
+                    (my/org-file "inbox.org")
+                    nil
+                    (with-current-buffer
+                        (find-file-noselect (my/org-file "inbox.org"))
+                      (point-min)))))
+
+(defun my/org-process-inbox ()
+  "Open the universal Org inbox for clarification and refiling."
+  (interactive)
+  (find-file (my/org-file "inbox.org"))
+  (widen)
+  (goto-char (point-min))
+  (org-overview)
+  (message
+   "Inbox: clarify -> state -> effort -> deadline/schedule if needed -> refile"))
 
 (defun my/org-archive-done-items ()
-  "Archive all DONE and CANCELLED subtrees under the heading at point.
-Each item is moved to `org-archive-location' with its full context preserved.
-Useful for cleaning up a course or project section at the end of a semester."
+  "Archive all completed/cancelled subtrees beneath the heading at point."
   (interactive)
   (save-excursion
     (org-map-entries
      (lambda ()
        (org-archive-subtree)
        (setq org-map-continue-from (outline-previous-heading)))
-     "/DONE|/CANCELLED"
+     "/DONE|/CANCELLED|/ANSWERED|/REVIEWED"
      'tree)))
 
-(defun my/org-process-inbox ()
-  "Open gtd.org narrowed to * Inbox for GTD triage.
+;;; ---------------------------------------------------------------------------
+;;; Structure templates
+;;; ---------------------------------------------------------------------------
 
-For each item:
-  SPC o t    change TODO state (e.g. TODO → START or CANCELLED)
-  SPC o s    add a SCHEDULED date
-  SPC o d    add a DEADLINE
-  SPC o R    refile to its proper section (full path completion via vertico)
-  SPC o S    refile straight to Someday/Maybe (no prompts)
-  SPC >      widen back to the full file when finished"
-  (interactive)
-  (find-file (my/org-file "gtd.org"))
-  (widen)
-  (goto-char (point-min))
-  (if (re-search-forward "^\\* Inbox" nil t)
-      (progn
-        (org-narrow-to-subtree)
-        (goto-char (point-min))
-        (org-overview)
-        (message
-         "Inbox: SPC o R = refile  ·  SPC o S = someday  ·  SPC o t = state  ·  SPC > = widen"))
-    (message "No '* Inbox' heading found in %s." (my/org-file "gtd.org"))))
+(with-eval-after-load 'org
+  (dolist (template
+           '(("el"    . "src emacs-lisp")
+             ("py"    . "src python")
+             ("c"     . "src C")
+	     ("nix"   . "src nix")
+             ("cpp"   . "src C++")
+             ("sh"    . "src shell")
+             ("oct"   . "src octave")
+             ("latex" . "src latex")
+             ("rs"    . "src rust")
+             ("spice" . "src spice")))
+    (add-to-list 'org-structure-template-alist template)))
 
+;;; ---------------------------------------------------------------------------
+;;; Org Modern
+;;; ---------------------------------------------------------------------------
 
-;; ── Denote ───────────────────────────────────────────────────────────────────
+(use-package org-modern
+  :ensure t
+  :demand t
+  :custom
+  (org-auto-align-tags t)
+  (org-tags-column 0)
+  (org-fold-catch-invisible-edits 'show-and-error)
+  (org-special-ctrl-a/e t)
+  (org-insert-heading-respect-content t)
+  ;; org-superstar handles these.
+  (org-modern-tag nil)
+  (org-modern-priority nil)
+  (org-modern-todo nil)
+  :config
+  (global-org-modern-mode))
+
+;;; ---------------------------------------------------------------------------
+;;; Org Superstar
+;;; ---------------------------------------------------------------------------
+
+(use-package org-superstar
+  :ensure t
+  :hook (org-mode . org-superstar-mode)
+  :config
+
+  (setq org-superstar-item-bullet-alist
+        '((?* . ?•)
+          (?+ . ?➤)
+          (?- . ?•)))
+
+  (setq org-superstar-headline-bullets-list
+        '("◉" "◈" "○" "▷"))
+
+  (setq org-superstar-special-todo-items t
+        org-superstar-remove-leading-stars t
+        org-hide-leading-stars t)
+
+  (setq org-superstar-todo-bullet-alist
+        '(("TODO"      . ?☐)
+          ("NEXT"      . ?▶)
+          ("WAIT"      . ?◌)
+          ("HOLD"      . ?Ⅱ)
+          ("QUESTION"  . ??)
+          ("ANSWERED"  . ?✓)
+          ("REVIEW"    . ?↻)
+          ("REVIEWED"  . ?✓)
+          ("DONE"      . ?✔)
+          ("CANCELLED" . ?✘))))
+
+;;; ---------------------------------------------------------------------------
+;;; Org Super Agenda
+;;; ---------------------------------------------------------------------------
+
+(use-package org-super-agenda
+  :ensure t
+  :demand t
+  :config
+  (org-super-agenda-mode 1))
+
+(setq org-super-agenda-groups
+      '((:name "🔥 Overdue"
+               :deadline past)
+
+        (:name "⚡ Due Today"
+               :deadline today)
+
+        (:name "🚨 Priority"
+               :priority "A")
+
+        (:name "▶ Next Actions"
+               :todo "NEXT")
+
+        (:name "⏳ Waiting"
+               :todo "WAIT")
+
+        (:name "❓ Open Questions"
+               :todo "QUESTION")
+
+        (:name "↻ Review"
+               :todo "REVIEW")
+
+        (:auto-category t)))
+
+;;; ---------------------------------------------------------------------------
+;;; Universal Agenda
+;;; ---------------------------------------------------------------------------
+
+(setq org-agenda-custom-commands
+      '(
+
+        ;; Daily command center ------------------------------------------------
+
+        ("d" "Dashboard"
+
+         ((agenda ""
+                  ((org-agenda-span 1)
+                   (org-agenda-overriding-header "📅 Calendar")))
+
+          (todo "NEXT"
+                ((org-agenda-overriding-header "▶ Next Actions")
+                 (org-super-agenda-groups
+                  '((:name "🚨 Critical"
+                           :priority "A")
+
+                    (:name "🧠 Deep Work"
+                           :tag "deep")
+
+                    (:name "⚡ Quick Actions"
+                           :tag "quick")
+
+                    (:auto-category t)))))
+
+          (todo "WAIT"
+                ((org-agenda-overriding-header "⏳ Waiting")))
+
+          (todo "QUESTION"
+                ((org-agenda-overriding-header "❓ Open Questions")))
+
+          (todo "REVIEW"
+                ((org-agenda-overriding-header "↻ Review Queue")))))
+
+        ;; Weekly review -------------------------------------------------------
+
+        ("w" "Weekly Overview"
+
+         ((agenda ""
+                  ((org-agenda-span 7)
+                   (org-agenda-start-on-weekday nil)
+                   (org-agenda-overriding-header "📅 Coming Week")))
+
+          (todo "NEXT"
+                ((org-agenda-overriding-header "▶ Active Next Actions")))
+
+          (todo "WAIT"
+                ((org-agenda-overriding-header "⏳ Waiting / Delegated")))
+
+          (todo "QUESTION"
+                ((org-agenda-overriding-header "❓ Questions to Resolve")))
+
+          (todo "REVIEW"
+                ((org-agenda-overriding-header "↻ Topics to Review")))))
+
+        ;; Focused views -------------------------------------------------------
+
+        ("n" "Next Actions"
+         todo "NEXT")
+
+        ("q" "Open Questions"
+         todo "QUESTION")
+
+        ("r" "Review Queue"
+         todo "REVIEW")
+
+        ("W" "Waiting"
+         todo "WAIT")
+
+        ("x" "Exams"
+         tags-todo "exam"
+         ((org-agenda-sorting-strategy '(deadline-up priority-down))))
+
+        ("a" "Assignments"
+         tags-todo "assignment"
+         ((org-agenda-sorting-strategy '(deadline-up priority-down))))
+
+        ("p" "Projects"
+         tags-todo "project"
+         ((org-agenda-sorting-strategy
+           '(priority-down deadline-up todo-state-up))))
+
+        ;; Context views -------------------------------------------------------
+
+        ("c" . "Contexts")
+
+        ("ch" "@home"
+         tags-todo "@home/NEXT")
+
+        ("cc" "@campus"
+         tags-todo "@campus/NEXT")
+
+        ("co" "@computer"
+         tags-todo "@computer/NEXT")
+
+        ("cl" "@lab"
+         tags-todo "@lab/NEXT")
+
+        ("ce" "@errand"
+         tags-todo "@errand/NEXT")
+
+        ("cp" "@phone"
+         tags-todo "@phone/NEXT")))
+
+;;; ---------------------------------------------------------------------------
+;;; Evil Org
+;;; ---------------------------------------------------------------------------
+
+(use-package evil-org
+  :ensure t
+  :after (evil org)
+  :hook (org-mode . evil-org-mode)
+  :config
+  (evil-org-set-key-theme
+   '(navigation insert textobjects additional calendar)))
+
+;;; ---------------------------------------------------------------------------
+;;; Org QL
+;;; ---------------------------------------------------------------------------
+
+(use-package org-ql
+  :ensure t
+  :bind ("M-s a" . my-consult-org-ql-agenda-jump))
+
+;;; ---------------------------------------------------------------------------
+;;; Denote
+;;; ---------------------------------------------------------------------------
+
+;; Boundary:
+;;
+;;   Org    = responsibilities, actions, projects, deadlines, courses, reviews.
+;;   Denote = durable knowledge, permanent notes, research, technical concepts.
+;;
+;; They may link to one another, but notes-dir is deliberately NOT part of the
+;; agenda file set.
 
 (use-package denote
   :ensure t
@@ -544,14 +712,109 @@ For each item:
    ("C-c n d" . denote-dired)
    ("C-c n g" . denote-grep))
   :config
-  (setq denote-directory (my/path 'notes-dir "~/notes/"))
-  (setq denote-known-keywords '("school" "project" "philsophy" "self"))
 
-  ;; Automatically rename Denote buffers when opening them so that
-  ;; instead of their long file name they have, for example, a literal
-  ;; "[D]" followed by the file's title.  Read the doc string of
-  ;; `denote-rename-buffer-format' for how to modify this.
+  (setq denote-directory (my/path 'notes-dir "~/notes/"))
+
+  (setq denote-known-keywords
+        '("school"
+          "engineering"
+          "project"
+          "philosophy"
+          "self"
+          "research"
+          "reference"))
+
   (denote-rename-buffer-mode 1))
 
+;;; ---------------------------------------------------------------------------
+;;; Bootstrap helpers
+;;; ---------------------------------------------------------------------------
+
+(defun my/org-initialize-file (file title category &optional filetags)
+  "Create FILE with TITLE, CATEGORY and optional FILETAGS if it does not exist."
+  (unless (file-exists-p file)
+    (with-temp-file file
+      (insert "#+title: " title "\n")
+      (insert "#+category: " category "\n")
+      (when filetags
+        (insert "#+filetags: " filetags "\n"))
+      (insert "\n"))))
+
+(defun my/org-bootstrap ()
+  "Create the basic universal Org file structure without overwriting data."
+  (interactive)
+
+  (my/org-create-system-directories)
+
+  (my/org-initialize-file
+   (my/org-file "inbox.org")
+   "Inbox"
+   "Inbox")
+
+  (my/org-initialize-file
+   (my/org-file "agenda.org")
+   "Agenda"
+   "Routine")
+
+  (my/org-initialize-file
+   (my/org-file "projects.org")
+   "Projects"
+   "Projects")
+
+  (my/org-initialize-file
+   (my/org-file "someday.org")
+   "Someday / Maybe"
+   "Someday")
+
+  (my/org-initialize-file
+   (my/org-file "reference.org")
+   "Reference"
+   "Reference")
+
+  (my/org-initialize-file
+   (my/org-file "journal.org")
+   "Journal"
+   "Journal")
+
+  ;; Add required project headings only when absent.
+  (let ((file (my/org-file "projects.org")))
+    (with-current-buffer (find-file-noselect file)
+      (goto-char (point-min))
+      (unless (re-search-forward "^\\* Active$" nil t)
+        (goto-char (point-max))
+        (insert "\n* Active\n"))
+      (goto-char (point-min))
+      (unless (re-search-forward "^\\* Engineering$" nil t)
+        (goto-char (point-max))
+        (insert "\n* Engineering\n"))
+      (save-buffer)))
+
+  ;; Seed agenda.org with universal recurring-review examples only when empty
+  ;; beyond its metadata.
+  (let ((file (my/org-file "agenda.org")))
+    (with-current-buffer (find-file-noselect file)
+      (goto-char (point-min))
+      (unless (re-search-forward "^\\* Reviews$" nil t)
+        (goto-char (point-max))
+        (insert
+         "\n* Reviews\n\n"
+         "** TODO Daily Review :routine:\n"
+         ":PROPERTIES:\n"
+         ":STYLE: habit\n"
+         ":END:\n\n"
+         "** TODO Weekly Review :routine:\n\n"
+         "** TODO Monthly Financial Review :routine:\n\n"
+         "* Routines\n\n"
+         "** TODO Process Inbox :routine:\n\n"
+         "** TODO Review Upcoming Deadlines :routine:\n")
+        (save-buffer))))
+
+  (my/org-refresh-agenda-files)
+  (my/org-refresh-refile-targets)
+
+  (message
+   "Universal Org system initialized. Add dates/repeaters to routines as desired."))
+
 (provide 'org-config)
+
 ;;; org.el ends here

@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: nix-lib-get-exe
+# key: getexe
+# --
+
+lib.getExe ${1:pkgs}.${2:foo}$0

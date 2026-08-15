@@ -21,6 +21,7 @@
 ;; Example: Syncthing folder layout on a specific workstation
 ;; (my/register-path 'org-dir   "~/Sync/org/")
 ;; (my/register-path 'notes-dir "~/Sync/notes/")
+ (my/register-path 'org-dir   "~/org/")
 
 ;; Example: branch by hostname for two machines in one file
 ;; (pcase (system-name)
@@ -43,7 +44,10 @@
 ;;   "Source Serif 4", "IBM Plex Serif", "Libre Baskerville", "Inter"
 
 
-(load-theme 'solarized-wombat-dark)
+(load-theme 'modus-operandi-tinted)
+(my/register-font 'default  "DejaVu Sans Mono"   110)  ; base/monospace face
+(my/register-font 'fixed    "DejaVu Sans Mono"   110)  ; code & inline code blocks
+(my/register-font 'variable "Inconsolata"       130)  ; prose in Org/text buffers
 
 
 (provide 'linux)

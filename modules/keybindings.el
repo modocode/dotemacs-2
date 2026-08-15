@@ -365,38 +365,105 @@
     "s"   '(:ignore t                 :which-key "search")
     "s s" '(consult-line              :which-key "line")
     "s g" '(consult-grep              :which-key "grep")
+    "s f" '(consult-find              :which-key "search files")
+    "s b" '(consult-bookmark          :which-key "search bookmarks")
     "s r" '(consult-ripgrep           :which-key "ripgrep")
     "s i" '(consult-imenu             :which-key "imenu")
     "s p" '(project-find-regexp       :which-key "in project")
 
     ;; ── Org & Notes (o) ──────────────────────────────────────────────────────
-    "o"   '(:ignore t                 :which-key "org / notes")
-    "o a" '(org-agenda                :which-key "agenda")
-    "o h" '((lambda () (interactive) (org-agenda nil "h")) :which-key "school")
-    "o e" '((lambda () (interactive) (org-agenda nil "e")) :which-key "exams")
-    "o p" '((lambda () (interactive) (org-agenda nil "p")) :which-key "projects")
-    "o L" '((lambda () (interactive) (org-agenda nil "l")) :which-key "life areas")
-    "o r" '((lambda () (interactive) (org-agenda nil "r")) :which-key "reading")
-    "o w" '((lambda () (interactive) (org-agenda nil "w")) :which-key "weekly")
-    "o q" '(org-ql-search             :which-key "ql search")
-    "o c" '(org-capture               :which-key "capture")
-    "o t" '(org-todo                  :which-key "todo state")
-    "o s" '(org-schedule              :which-key "schedule")
-    "o d" '(org-deadline              :which-key "deadline")
-    "o g" '(hydra-org-nav/body        :which-key "navigate…")
-    "o T" '(hydra-org-table/body      :which-key "table…")
-    "o n" '(denote                    :which-key "new note")
-    "o l" '(denote-link               :which-key "link note")
-    "o b" '(denote-backlinks          :which-key "backlinks")
+    "o"   '(:ignore t                    :which-key "org / life")
 
-    ;; ── Refile & Archive ─────────────────────────────────────────────────────
-    ;; Workflow: capture → Inbox (SPC o c t t), process Inbox (SPC o i),
-    ;; refile each item (SPC o R), archive completed section (SPC o x).
-    "o R" '(org-refile                 :which-key "refile…")
-    "o i" '(my/org-process-inbox       :which-key "inbox")
-    "o S" '(my/org-refile-to-someday   :which-key "→ someday")
-    "o A" '(org-archive-subtree        :which-key "archive")
-    "o x" '(my/org-archive-done-items  :which-key "archive done")
+    ;; ── Capture / Processing ──────────────────────────────────────────────────
+    "o c" '(org-capture                  :which-key "capture…")
+    "o i" '(my/org-process-inbox         :which-key "process inbox")
+    "o R" '(org-refile                   :which-key "refile…")
+    "o S" '(my/org-refile-to-someday     :which-key "→ someday")
+    "o A" '(org-archive-subtree          :which-key "archive")
+    "o x" '(my/org-archive-done-items    :which-key "archive done")
+
+    ;; ── Command Center / Views ────────────────────────────────────────────────
+    "o a" '(org-agenda                  :which-key "agenda…")
+    "o d" '((lambda () (interactive)
+              (org-agenda nil "d"))
+            :which-key "dashboard")
+    "o w" '((lambda () (interactive)
+              (org-agenda nil "w"))
+            :which-key "weekly review")
+    "o n" '((lambda () (interactive)
+              (org-agenda nil "n"))
+            :which-key "next actions")
+    "o r" '((lambda () (interactive)
+              (org-agenda nil "r"))
+            :which-key "review queue")
+    "o W" '((lambda () (interactive)
+              (org-agenda nil "W"))
+            :which-key "waiting")
+    "o q" '((lambda () (interactive)
+              (org-agenda nil "q"))
+            :which-key "questions")
+    "o p" '((lambda () (interactive)
+              (org-agenda nil "p"))
+            :which-key "projects")
+
+    ;; ── Academic / Deadline Views ─────────────────────────────────────────────
+    "o e" '((lambda () (interactive)
+              (org-agenda nil "x"))
+            :which-key "exams")
+    "o f" '((lambda () (interactive)
+              (org-agenda nil "a"))
+            :which-key "assignments")
+
+    ;; ── Context Views ─────────────────────────────────────────────────────────
+    "o C" '(:ignore t                    :which-key "contexts")
+    "o C h" '((lambda () (interactive)
+                (org-agenda nil "ch"))
+              :which-key "@home")
+    "o C c" '((lambda () (interactive)
+                (org-agenda nil "cc"))
+              :which-key "@campus")
+    "o C o" '((lambda () (interactive)
+                (org-agenda nil "co"))
+              :which-key "@computer")
+    "o C l" '((lambda () (interactive)
+                (org-agenda nil "cl"))
+              :which-key "@lab")
+    "o C e" '((lambda () (interactive)
+                (org-agenda nil "ce"))
+              :which-key "@errand")
+    "o C p" '((lambda () (interactive)
+                (org-agenda nil "cp"))
+              :which-key "@phone")
+
+    ;; ── Task Manipulation ─────────────────────────────────────────────────────
+    "o t" '(org-todo                     :which-key "todo state")
+    "o s" '(org-schedule                 :which-key "schedule")
+    "o D" '(org-deadline                 :which-key "deadline")
+    "o E" '(org-set-effort                :which-key "set effort")
+    "o g" '(hydra-org-nav/body            :which-key "navigate…")
+    "o T" '(hydra-org-table/body          :which-key "table…")
+
+    ;; ── Search / Knowledge ────────────────────────────────────────────────────
+    "o Q" '((lambda () (interactive)
+              (org-agenda nil "q"))
+            :which-key "questions")
+    "o V" '(org-ql-search                :which-key "QL search…")
+
+    ;; ── Denote / Knowledge Base ────────────────────────────────────────────────
+    ;;
+    ;; Org answers: "What do I need to do?"
+    ;; Denote answers: "What do I know?"
+    "o N" '(denote                      :which-key "new knowledge note")
+    "o O" '(denote-open-or-create       :which-key "open/create note")
+    "o L" '(denote-link                 :which-key "link note")
+    "o B" '(denote-backlinks            :which-key "backlinks")
+    "o G" '(denote-grep                 :which-key "grep notes")
+    "o F" '(denote-dired                :which-key "browse notes")
+
+    ;; ── Org Navigation ────────────────────────────────────────────────────────
+    "o j" '(org-goto                    :which-key "goto heading")
+    "o l" '(org-store-link              :which-key "store link")
+    "o b" '(org-switchb                 :which-key "switch org buffer")
 
     ;; ── Log / Clock (l) ──────────────────────────────────────────────────────
     "l"   '(:ignore t                      :which-key "log / clock")
@@ -408,7 +475,7 @@
     "l d" '(org-clock-display              :which-key "display totals")
     "l p" '(org-pomodoro                   :which-key "pomodoro")
     "l c" '(org-clock-cancel               :which-key "cancel clock")
-
+    
     ;; ── Code (c) ─────────────────────────────────────────────────────────────
     "c"   '(:ignore t                 :which-key "code")
     "c c" '(compile                   :which-key "compile")

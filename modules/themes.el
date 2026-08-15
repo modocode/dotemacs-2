@@ -1,5 +1,7 @@
 ;;; modules/themes.el --- My Favorite Themes for Emacs -*- lexical-binding: t; -*-
 
+(add-to-list 'custom-theme-load-path
+             (expand-file-name "themes" user-emacs-directory))
 (use-package ubuntu-theme   :ensure t)
 (use-package poet-theme     :ensure t)
 (use-package solarized-theme :ensure t)
@@ -31,7 +33,7 @@
   :init (progn (load-theme 'ample t t)
                (load-theme 'ample-flat t t)
                (load-theme 'ample-light t t)
-               (enable-theme 'ample-flat))
+               )
   :defer t
   :ensure t)
 

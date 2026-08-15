@@ -1,0 +1,32 @@
+# -*- mode: snippet -*-
+# name: nix-make-wrapper
+# key: nixmakewrap
+# --
+
+{
+  perSystem =
+    { pkgs, lib, ... }:
+    let
+      ${1:config} = pkgs.writeText "${2:foo.conf}" ''
+        ${3}
+      '';
+    in
+    {
+      packages.${4:myFoo} = pkgs.symlinkJoin {
+        name = "${4:myFoo}";
+
+        paths = [
+          pkgs.${5:foo}
+        ];
+
+        nativeBuildInputs = [
+          pkgs.makeWrapper
+        ];
+
+        postBuild = ''
+          wrapProgram $out/bin/${5:foo} \
+            --add-flags "--config \${${1:config}}"
+        '';
+      };
+    };
+}

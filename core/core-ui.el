@@ -9,12 +9,11 @@
       ;; Default face — monospace baseline.  Falls back through known good fonts.
       (or (my/set-face-font 'default
             (my/font-name 'default) (my/font-height 'default))
-          (my/set-font "LigaSauceCodePro NF" 110)
-          (my/set-font "Hack" 110)
-          (my/set-font "IBM Plex Mono" 110))
+          (my/set-font "DejaVu Sans Mono" 120)
+          )
       ;; Fixed-pitch — used for code in prog-mode and inline code blocks in Org.
-      (my/set-face-font 'fixed-pitch
-        (my/font-name 'fixed) (my/font-height 'fixed))
+      ( my/set-face-font 'fixed-pitch
+          (my/font-name 'fixed) (my/font-height 'fixed))
       ;; Variable-pitch — used for prose in Org/text modes.
       (or (my/set-face-font 'variable-pitch
             (my/font-name 'variable) (my/font-height 'variable))

@@ -1,0 +1,29 @@
+# -*- mode: snippet -*-
+# name: nix-write-shell-wrapper
+# key: nixshellwrap
+# --
+
+{
+  perSystem =
+    { pkgs, lib, ... }:
+    let
+      ${1:config} = pkgs.writeText "${2:foo.conf}" ''
+        ${3}
+      '';
+    in
+    {
+      packages.${4:myFoo} = pkgs.writeShellApplication {
+        name = "${5:foo}";
+
+        runtimeInputs = [
+          pkgs.${6:foo}
+        ];
+
+        text = ''
+          exec \${lib.getExe pkgs.${6:foo}} \
+            --config \${${1:config}} \
+            "$@"
+        '';
+      };
+    };
+}

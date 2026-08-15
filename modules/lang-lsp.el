@@ -102,22 +102,49 @@ The corresponding executable must be on your PATH.")
 ;; ALL `eglot-ensure' calls live here.
 ;; `with-eval-after-load' defers the hook registration until the mode's
 ;; feature is actually loaded, which is correct since we defer all packages.
+;;
+;; NIX PROJECT TIMING NOTE
+;; ───────────────────────
+;; For nix projects using direnv + envrc, eglot-ensure fires (from these hooks)
+;; BEFORE envrc has set process-environment.  The nix-config module handles this
+;; by advising envrc--apply to re-run eglot-ensure after the env loads.
+;;
+;; These hooks below still run for:
+;;   a) Non-nix projects (globally installed LSP servers on system PATH)
+;;   b) Nix projects where eglot can already find the server (warm nix store)
+;;
+;; `my/eglot-ensure-safe' wraps eglot-ensure to suppress the startup warning
+;; when the server binary isn't found (nix env not loaded yet) — nix-config
+;; will retry once envrc applies the environment.
+
+(defun my/eglot-ensure-safe ()
+  "Call `eglot-ensure', suppressing errors from missing server binaries.
+In nix projects, the LSP binary may not be on PATH until envrc loads the
+devshell environment.  nix-config.el retries via its envrc--apply advice."
+  (condition-case err
+      (eglot-ensure)
+    ;; eglot signals `user-error' when it can't find the server program.
+    (user-error
+     (unless (string-match-p "server-info\\|couldn't guess\\|jsonrpc" (error-message-string err))
+       ;; Re-raise errors that aren't "can't find server" — those are real problems.
+       (message "[eglot] Note: %s (will retry after nix env loads)"
+                (error-message-string err))))))
 
 (when my/use-eglot
 
   ;; Python
   (with-eval-after-load 'python
-    (add-hook 'python-mode-hook    #'eglot-ensure)
-    (add-hook 'python-ts-mode-hook #'eglot-ensure))
+    (add-hook 'python-mode-hook    #'my/eglot-ensure-safe)
+    (add-hook 'python-ts-mode-hook #'my/eglot-ensure-safe))
 
   ;; C / C++  (cc-mode provides both c-mode and c++-mode)
   (with-eval-after-load 'cc-mode
-    (add-hook 'c-mode-hook   #'eglot-ensure)
-    (add-hook 'c++-mode-hook #'eglot-ensure))
+    (add-hook 'c-mode-hook   #'my/eglot-ensure-safe)
+    (add-hook 'c++-mode-hook #'my/eglot-ensure-safe))
 
   ;; Zig
   (with-eval-after-load 'zig-mode
-    (add-hook 'zig-mode-hook #'eglot-ensure)))
+    (add-hook 'zig-mode-hook #'my/eglot-ensure-safe)))
 
 ;;; ── Corfu + Eglot Integration ───────────────────────────────────────────────
 ;; Eglot populates `completion-at-point-functions' (CAPF).

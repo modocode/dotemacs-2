@@ -1,0 +1,27 @@
+# -*- mode: snippet -*-
+# name: nix-home-module-package
+# key: homepkg
+# --
+
+{ moduleWithSystem, ... }:
+
+{
+  perSystem =
+    { pkgs, ... }:
+    {
+      packages.${1:myFoo} = ${2:pkgs.foo};
+    };
+
+  flake.homeModules.${3:foo} = moduleWithSystem (
+    { self', ... }:
+
+    { ... }:
+    {
+      home.packages = [
+        self'.packages.${1:myFoo}
+      ];
+
+      ${0}
+    }
+  );
+}

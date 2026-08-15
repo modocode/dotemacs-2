@@ -17,8 +17,14 @@
 (use-package vertico
   :ensure t
   :demand t   ; must be active from the very first M-x
+
+  :bind (:map vertico-mode
+	      :map minibuffer-local-map
+	      ("M-h" . backward-kill-word))
+
   :custom
   (vertico-cycle t)   ; wrap around at top/bottom of candidate list
+  
   :config
   (vertico-mode 1))
 
@@ -55,6 +61,7 @@
 ;; M-x, file sizes for find-file, key bindings for describe-function, etc.
 
 (use-package marginalia
+  :after vertico
   :ensure t
   :demand t
   :config
@@ -137,6 +144,8 @@
   (embark-collect-mode . consult-preview-at-point-mode))
 
 
+(use-package vterm
+  :commands vterm)
 
 (provide 'completion-config)
 ;;; completion.el ends here

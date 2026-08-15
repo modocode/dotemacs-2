@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: nix-nixos-aggregate
+# key: nixagg
+# --
+
+{ self, ... }:
+
+{
+  flake.nixosModules.${1:default} = {
+    imports = [
+      self.nixosModules.${2:foo}
+      self.nixosModules.${3:bar}
+      ${0}
+    ];
+  };
+}

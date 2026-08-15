@@ -1,0 +1,17 @@
+# -*- mode: snippet -*-
+# name: nix-module-with-system
+# key: nixmodsys
+# --
+
+{ moduleWithSystem, ... }:
+
+{
+  flake.nixosModules.${1:name} = moduleWithSystem (
+    { self', ... }:
+
+    { ${2:pkgs}, ... }:
+    {
+      ${0}
+    }
+  );
+}

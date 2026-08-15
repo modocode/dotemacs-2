@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: nix-home-program
+# key: homeprog
+# --
+
+{
+  flake.homeModules.${1:name} =
+    { pkgs, ... }:
+    {
+      programs.${1:name} = {
+        enable = true;
+
+        ${0}
+      };
+    };
+}

@@ -1,0 +1,23 @@
+# -*- mode: snippet -*-
+# name: nix-nixos-module-package
+# key: nixmodpkg
+# --
+
+{ inputs, moduleWithSystem, ... }:
+
+{
+  flake.nixosModules.${1:name} = moduleWithSystem (
+    { self', ... }:
+
+    { ${2:pkgs}, ... }:
+    {
+      ${3}
+    }
+  );
+
+  perSystem =
+    { pkgs, lib, ... }:
+    {
+      packages.${4:my${1}} = ${5:pkgs.${1}};
+    };
+}

@@ -151,5 +151,213 @@ before proceeding since this affects ALL other open buffers."
       (mapc #'kill-buffer victims)
       (message "Killed %d buffer(s)." (length victims)))))
 
+;;; ---------------------------------------------------------------------------
+;;; Course creation
+;;; ---------------------------------------------------------------------------
+
+(defun my/org-slugify (string)
+  "Convert STRING into a filesystem-friendly lowercase slug."
+  (let ((slug (downcase (string-trim string))))
+    (setq slug (replace-regexp-in-string "[^a-z0-9]+" "-" slug))
+    (setq slug (replace-regexp-in-string "^-+" "" slug))
+    (setq slug (replace-regexp-in-string "-+$" "" slug))
+    slug))
+
+(defun my/org-new-course ()
+  "Create and open a new course file using the universal course template.
+
+The course is created in `org/courses/' and automatically becomes part
+of the Org agenda because course files are discovered recursively."
+  (interactive)
+
+  (let* ((courses-dir (my/org-file "courses"))
+         (name        (read-string "Course name: "))
+         (code        (read-string "Course code: "))
+         (instructor  (read-string "Instructor: "))
+         (term        (read-string "Term: "
+                                   "Fall 2026"))
+         (credits     (read-string "Credits: "))
+         (location    (read-string "Location: "))
+         (schedule    (read-string "Meeting schedule: "))
+         (slug        (my/org-slugify
+                       (if (string-empty-p code)
+                           name
+                         code)))
+         (file        (expand-file-name
+                       (concat slug ".org")
+                       courses-dir)))
+
+    ;; Make sure the courses directory exists.
+    (make-directory courses-dir t)
+
+    ;; Never silently overwrite an existing course.
+    (when (file-exists-p file)
+      (user-error "Course already exists: %s" file))
+
+    (with-temp-file file
+      (insert "#+title: " name "\n")
+      (insert "#+subtitle: " code "\n")
+      (insert "#+category: " code "\n")
+      (insert "#+filetags: :" (my/org-slugify code) ":\n")
+      (insert "\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Course information
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Course Information\n")
+      (insert ":PROPERTIES:\n")
+      (insert ":COURSE-CODE: " code "\n")
+      (insert ":INSTRUCTOR: " instructor "\n")
+      (insert ":TERM: " term "\n")
+      (insert ":CREDITS: " credits "\n")
+      (insert ":LOCATION: " location "\n")
+      (insert ":SCHEDULE: " schedule "\n")
+      (insert ":END:\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Course overview
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Overview\n\n")
+      (insert "** Description\n\n")
+      (insert "** Learning Objectives\n")
+      (insert "- [ ] \n")
+      (insert "- [ ] \n")
+      (insert "- [ ] \n\n")
+
+      (insert "** Important Topics\n")
+      (insert "- \n")
+      (insert "- \n")
+      (insert "- \n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Schedule
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Schedule\n\n")
+      (insert "| Date | Topic | Reading | Assignment | Notes |\n")
+      (insert "|------+-------+---------+------------+-------|\n")
+      (insert "|      |       |         |            |       |\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Assignments
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Assignments\n\n")
+      (insert "** Upcoming\n\n")
+      (insert "** Completed\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Labs
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Labs\n\n")
+      (insert "** Upcoming\n\n")
+      (insert "** Completed\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Exams
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Exams\n\n")
+      (insert "** Upcoming\n\n")
+      (insert "** Completed\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Lecture notes
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Lecture Notes\n\n")
+      (insert "** Topics\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Questions
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Questions\n\n")
+      (insert "** Open Questions\n\n")
+      (insert "** Resolved Questions\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Review
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Review Queue\n\n")
+      (insert "** Weak Concepts\n\n")
+      (insert "** Formulas / Procedures\n\n")
+      (insert "** Problems to Revisit\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Problem-solving / practice
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Practice\n\n")
+      (insert "** Problem Sets\n\n")
+      (insert "** Important Problems\n\n")
+      (insert "** Mistakes / Error Log\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Projects
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Projects\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Resources
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Resources\n\n")
+      (insert "** Textbook\n\n")
+      (insert "** Professor Resources\n\n")
+      (insert "** Online Resources\n\n")
+      (insert "** Reference Material\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Formula sheet
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Formula Sheet\n\n")
+      (insert "#+begin_src latex\n")
+      (insert "% Important equations for " code "\n")
+      (insert "#+end_src\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Grade tracker
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Grade Tracker\n\n")
+      (insert "| Assessment | Weight | Score | Notes |\n")
+      (insert "|------------+--------+-------+-------|\n")
+      (insert "|            |        |       |       |\n")
+      (insert "|------------+--------+-------+-------|\n")
+      (insert "| Total      | 100%   |       |       |\n\n")
+
+      ;; ---------------------------------------------------------------------
+      ;; Semester review
+      ;; ---------------------------------------------------------------------
+
+      (insert "* Semester Review\n\n")
+      (insert "** What I Learned\n\n")
+      (insert "** What I Struggled With\n\n")
+      (insert "** Important Concepts to Retain\n\n")
+      (insert "** Final Resources\n\n"))
+
+    ;; Open the new course.
+    (find-file file)
+
+    ;; Refresh the agenda and refile system so the new course is immediately
+    ;; recognized.
+    (when (fboundp 'my/org-refresh-agenda-files)
+      (my/org-refresh-agenda-files))
+
+    (when (fboundp 'my/org-refresh-refile-targets)
+      (my/org-refresh-refile-targets))
+
+    (message "Created course: %s (%s)" name code)))
+
+
+
+
 (provide 'mo-helpers)
 ;;; mo-helpers.el ends here

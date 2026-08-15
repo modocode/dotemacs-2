@@ -66,9 +66,9 @@
 
    ;; Editing
    '("a" . meow-append)
-   '("A" . meow-open-below)
+   '("A" . (lambda () (interactive) (end-of-line) (meow-insert)))
    '("i" . meow-insert)
-   '("I" . meow-open-above)
+   '("I" . (lambda () (interactive) (beginning-of-line) (meow-insert)))
    '("o" . meow-open-below)
    '("O" . meow-open-above)
    '("c" . meow-change)
@@ -87,7 +87,28 @@
    '("-" . negative-argument)
    '("q" . meow-quit)
    '("'" . repeat)
+   '(">" . my/indent-right)
+   '("<" . my/indent-left)
+   '("Q" . kmacro-start-macro-or-insert-counter)
+   '("@" . kmacro-end-or-call-macro)
    '("<escape>" . ignore)))
+
+
+
+(defun my/indent-right ()
+  "Indent region or line right."
+  (interactive)
+  (if (use-region-p)
+      (indent-rigidly (region-beginning) (region-end) tab-width)
+    (indent-rigidly (line-beginning-position) (line-end-position) tab-width)))
+
+(defun my/indent-left ()
+  "Indent region or line left."
+  (interactive)
+  (if (use-region-p)
+      (indent-rigidly (region-beginning) (region-end) (- tab-width))
+    (indent-rigidly (line-beginning-position) (line-end-position) (- tab-width))))
+
 
 (use-package meow
   :ensure t

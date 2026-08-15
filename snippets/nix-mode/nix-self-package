@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: nix-self-package-exe
+# key: selfexe
+# --
+
+lib.getExe self'.packages.${1:myFoo}$0
