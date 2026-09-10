@@ -49,14 +49,10 @@
     :ensure t
     :bind ("C-c s" . rg-menu)))
 
-;;; ── Better Built-in Minibuffer Completion ───────────────────────────────────
-(use-package emacs
-  :ensure nil
-  :custom
-  ;; `flex' scoring matches characters out-of-order (like VS Code's fuzzy find).
-  ;; `basic' is the fallback for when flex produces no results.
-  (completion-styles '(flex basic))
-  (completion-category-overrides '((file (styles basic partial-completion)))))
+(setq warning-minimum-log-level :warning)
+(setq warning-minimum-level :error)
+
+
 
 
 (provide 'ui-tweaks)

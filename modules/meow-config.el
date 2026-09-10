@@ -12,8 +12,8 @@
   ;; Motion state — used in special buffers (magit, dired, etc.)
   ;; Override j/k so they move lines rather than trigger meow-next/prev hints.
   (meow-motion-define-key
-   '("j" . meow-next)
-   '("k" . meow-prev)
+   '("k" . meow-next)
+   '("i" . meow-prev)
    '("<escape>" . ignore))
 
   ;; Normal state — the core editing keys.
@@ -30,20 +30,21 @@
    '("8" . meow-expand-8)
    '("9" . meow-expand-9)
 
-   ;; Movement
-   '("h" . meow-left)
-   '("H" . meow-left-expand)
-   '("j" . meow-next)
-   '("J" . meow-next-expand)
-   '("k" . meow-prev)
-   '("K" . meow-prev-expand)
+   
+   '("j" .  meow-left)
+   '("J" . meow-left-expand)
+   '("k" . meow-next)
+   '("K" . meow-next-expand)
    '("l" . meow-right)
    '("L" . meow-right-expand)
-   '("b" . meow-back-word)
-   '("B" . meow-back-symbol)
-   '("e" . meow-next-word)
-   '("E" . meow-next-symbol)
-   '("f" . meow-find)
+   '("i" . meow-prev)
+   '("I" . meow-prev-expand)
+   ;; Movement
+   '("U" . meow-back-word)
+   '("u" . meow-back-symbol)
+   '("O" . meow-next-word)
+   '("o" . meow-next-symbol)
+   '("F" . meow-find)
    '("t" . meow-till)
    '("n" . meow-search)
 
@@ -52,36 +53,42 @@
    '("." . meow-bounds-of-thing)
    '("[" . meow-beginning-of-thing)
    '("]" . meow-end-of-thing)
-   '("w" . meow-mark-word)
-   '("W" . meow-mark-symbol)
-   '("x" . meow-line)
+   '("b" . meow-mark-word)
+   '("B" . meow-mark-symbol)
+   '("m" . meow-line)
    '("X" . meow-goto-line)
    '("Q" . meow-goto-line)
-   '("v" . meow-visit)
+   '("V" . meow-visit)
    '("z" . meow-pop-selection)
    '(";" . meow-reverse)
    '("g" . meow-cancel-selection)
    '("G" . meow-grab)
    '("Y" . meow-sync-grab)
+   '("v" . er/expand-region)
+   '("V" . er/contract-region)
+
 
    ;; Editing
    '("a" . meow-append)
    '("A" . (lambda () (interactive) (end-of-line) (meow-insert)))
-   '("i" . meow-insert)
-   '("I" . (lambda () (interactive) (beginning-of-line) (meow-insert)))
-   '("o" . meow-open-below)
-   '("O" . meow-open-above)
-   '("c" . meow-change)
+   '("f" . meow-insert)
+   '("F" . (lambda () (interactive) (beginning-of-line) (meow-insert)))
+   '("w" . meow-open-below)
+   '("W" . meow-open-above)
+   '("e" . backward-kill-word)
+   '("E" . kill-word)
+   
+   '("h" . meow-change)
    '("d" . meow-delete)
    '("D" . meow-backward-delete)
    '("s" . meow-kill)
    '("r" . meow-replace)
    '("R" . meow-swap-grab)
    '("p" . meow-yank)
-   '("y" . meow-save)
-   '("m" . meow-join)
-   '("u" . meow-undo)
-   '("U" . meow-undo-in-selection)
+   '("c" . meow-save)
+   '("x" . meow-join)
+   '("y" . meow-undo)
+   '("Y" . meow-undo-in-selection)
 
    ;; Misc
    '("-" . negative-argument)
@@ -115,7 +122,8 @@
   :demand t
   :config
   (my/meow-setup)
-  (meow-global-mode 1))
+  (meow-global-mode 1)
+  )
 
 ;; Force meow to load synchronously so state keymaps and meow-global-mode
 ;; are active before the rest of init.el finishes.  Without this, elpaca

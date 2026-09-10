@@ -80,6 +80,7 @@ Falls back through `my/path' according to the rest of this configuration."
               "reference.org"
               "agenda.org"))
     (my/org-files-recursively (my/org-file "areas"))
+    (my/org-files-recursively (my/org-file ""))
     (my/org-files-recursively (my/org-file "courses")))))
 
 (defun my/org-refresh-agenda-files ()
@@ -118,6 +119,7 @@ Falls back through `my/path' according to the rest of this configuration."
   :init
 
   (setq org-directory (my/path 'org-dir))
+  (setq org-clock-idle-time 15)
 
   :config
 
@@ -271,9 +273,10 @@ Falls back through `my/path' according to the rest of this configuration."
         ("@phone"    . ?p)
         (:endgroup)
 
-        ("deep"       . ?d)
+        ("deep"       . ?n)
         ("quick"      . ?q)
         ("reading"    . ?r)
+	("drill"      . ?d)
         ("exam"       . ?x)
         ("assignment" . ?a)
         ("project"    . ?j)
@@ -319,7 +322,7 @@ Falls back through `my/path' according to the rest of this configuration."
 
         ;; Learning / knowledge gaps ------------------------------------------
 
-        ("q" "Question"
+        ("Q" "Question"
          entry
          (file ,(my/org-file "inbox.org"))
          "* QUESTION %^{Question}\n:PROPERTIES:\n:CREATED: %U\n:END:\n%?"
@@ -444,6 +447,16 @@ Falls back through `my/path' according to the rest of this configuration."
   (org-overview)
   (message
    "Inbox: clarify -> state -> effort -> deadline/schedule if needed -> refile"))
+
+(defun my/org-process-reference ()
+  
+  "Open the universal Org inbox for clarification and refiling."
+  (interactive)
+  (find-file (my/org-file "reference.org"))
+  (widen)
+  (goto-char (point-min))
+  (org-overview))
+
 
 (defun my/org-archive-done-items ()
   "Archive all completed/cancelled subtrees beneath the heading at point."
@@ -631,6 +644,10 @@ Falls back through `my/path' according to the rest of this configuration."
         ("r" "Review Queue"
          todo "REVIEW")
 
+	("E" "Events"
+	 tags "event"
+	 ((org-agenda-sorting-strategy '(timestamp-up))))
+	
         ("W" "Waiting"
          todo "WAIT")
 

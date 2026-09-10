@@ -127,16 +127,16 @@ Use this when the language server crashes to see the actual error message."
 ;;; ── SPC m local leader bindings (Python) ───────────────────────────────────
 ;; Deferred until general is loaded (keybindings.el sets up my/local-leader).
 
-(with-eval-after-load 'general
-  (with-eval-after-load 'meow
-    (my/local-leader
-      :keymaps '(python-mode-map python-ts-mode-map)
-      "v" '(my/python-venv-create  :which-key "create venv")
-      "a" '(pyvenv-activate        :which-key "activate venv")
-      "d" '(pyvenv-deactivate      :which-key "deactivate venv")
-      "p" '(my/python-pip-install  :which-key "pip install")
-      "r" '(run-python                  :which-key "run REPL")
-      "l" '(my/python-show-eglot-stderr :which-key "LSP log"))))
+;; (with-eval-after-load 'general
+;;   (with-eval-after-load 'meow
+;;     (my/local-leader
+;;       :keymaps '(python-mode-map python-ts-mode-map)
+;;       "v" '(my/python-venv-create  :which-key "create venv")
+;;       "a" '(pyvenv-activate        :which-key "activate venv")
+;;       "d" '(pyvenv-deactivate      :which-key "deactivate venv")
+;;       "p" '(my/python-pip-install  :which-key "pip install")
+;;       "r" '(run-python                  :which-key "run REPL")
+;;       "l" '(my/python-show-eglot-stderr :which-key "LSP log"))))
 
 (provide 'lang-python)
 ;;; lang-python.el ends here

@@ -2,10 +2,19 @@
 
 (add-to-list 'custom-theme-load-path
              (expand-file-name "themes" user-emacs-directory))
+
 (use-package ubuntu-theme   :ensure t)
 (use-package poet-theme     :ensure t)
 (use-package solarized-theme :ensure t)
 (use-package gruvbox-theme  :ensure t)
+
+
+(use-package base16-theme
+  :ensure t
+  :demand t
+  :config
+  ;; (load-theme 'base16-default-dark t)
+  )
 
 (use-package zenburn-theme
   :ensure t

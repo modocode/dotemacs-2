@@ -1,0 +1,36 @@
+# -*- mode: snippet -*-
+# name: flake-dev
+# key: flake
+# --
+
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+  };
+
+  outputs =inputs@{nixpkgs, flake-parts, ${1},...}:{
+     perSystem = {config, pkgs, ...}:
+     {
+     
+     devshells.${2:default} = {
+         packages = with pkgs; [
+	     ${3}
+
+         ];
+     			    
+
+     };   
+     
+
+
+     };
+
+
+  };
+
+
+
+
+}

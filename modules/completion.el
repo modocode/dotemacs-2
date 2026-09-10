@@ -37,25 +37,50 @@
   :ensure t
   :demand t
   :custom
-  ;; Split on spaces OR dashes so "foo bar" matches "foo-bar-baz"
-  (orderless-component-separator "[ -]")
   (completion-styles '(orderless basic))
-  ;; orderless-prefixes: each token matches the START of a dash/slash-separated
-  ;; word component — "tab g" → "tab-group", "foo b" → "foo-bar-baz"
-  ;; orderless-flex: "tgrp" fuzzy-matches "tab-group" as a last resort
-  (orderless-matching-styles
-   '(orderless-prefixes   ; "tab g"  → matches "tab-group"
-     orderless-literal    ; "group"  → exact substring anywhere
-     orderless-flex))     ; "tgrp"   → fuzzy fallback
-  ;; Case insensitive everywhere
-  (completion-ignore-case t)
-  (read-file-name-completion-ignore-case t)
-  ;; Category overrides:
-  ;;   command — explicit so Emacs' own category defaults can't shadow orderless
-  ;;   file    — keep basic + partial-completion for path expansion ("~/Doc/pr")
+  (completion-category-defaults nil)
+
+  ;; File paths behave better with partial completion.
   (completion-category-overrides
-   '((command (styles orderless basic))
-     (file    (styles basic partial-completion)))))
+   '((file (styles partial-completion))))
+
+  ;; Keep default matching precise.
+  (orderless-matching-styles
+   '(orderless-literal
+     orderless-regexp
+     orderless-initialism
+     orderless-prefixes))
+
+  :config
+  (defun my/orderless-dispatch (pattern _index _total)
+    (cond
+     ;; !foo  -> exclude foo
+     ((string-prefix-p "!" pattern)
+      `(orderless-without-literal . ,(substring pattern 1)))
+
+     ;; foo=   -> literal
+     ((string-suffix-p "=" pattern)
+      `(orderless-literal . ,(substring pattern 0 -1)))
+
+     ;; foo^   -> prefix
+     ((string-suffix-p "^" pattern)
+      `(orderless-prefixes . ,(substring pattern 0 -1)))
+
+     ;; foo~   -> flex/fuzzy
+     ((string-suffix-p "~" pattern)
+      `(orderless-flex . ,(substring pattern 0 -1)))
+
+     ;; foo%   -> regexp
+     ((string-suffix-p "%" pattern)
+      `(orderless-regexp . ,(substring pattern 0 -1)))))
+
+  (setq orderless-style-dispatchers
+        '(my/orderless-dispatch)))
+
+
+
+
+
 ;;; ── Marginalia ──────────────────────────────────────────────────────────────
 ;; Adds helpful annotations to minibuffer candidates: function docstrings for
 ;; M-x, file sizes for find-file, key bindings for describe-function, etc.
@@ -142,6 +167,10 @@
   :ensure t
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
+
+
+;; (add-to-list 'vertico-multiform-categories '(embark-keybinding grid))
+;; (vertico-multiform-mode)
 
 
 (use-package vterm

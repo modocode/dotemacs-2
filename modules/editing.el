@@ -10,6 +10,11 @@
 
 
 
+(use-package surround
+  :ensure t
+  :bind-keymap ("M-'" . surround-keymap))
+
+
 (use-package yasnippet
   :ensure t
   :demand t   ; yas-global-mode in :config requires eager load

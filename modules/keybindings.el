@@ -268,6 +268,11 @@
     :prefix  "SPC"
     :global-prefix "M-SPC")
 
+
+  ;; General Keybindings For Nutrition Tracking
+  (require 'my-nutrition)
+
+
   ;; SPC m local leader — for mode-specific bindings added in other modules.
   ;; Example: (my/local-leader :keymaps 'python-mode-map "r" #'run-python)
   (general-create-definer my/local-leader
@@ -435,6 +440,37 @@
                 (org-agenda nil "cp"))
               :which-key "@phone")
 
+    ;; "O C n" ' (:ignore t :which-key "nutrition")
+    ;; "f" '((lambda () (interactive)
+    ;; 	    (my/nutrition-new-food))
+    ;; 	    :which-key "new food")
+    ;; "r" #'my/nutrition-new-recipe
+    ;; "a" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-add-ingredient))
+    ;; 	 :which-key "nutrition-add-ingredient")
+    ;; "l" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-log))
+    ;; 	 :which-key "my/nutrition-log")
+    ;; "d" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-dashboard))
+    ;; 	 :which-key "my/nutrition-dashboard")
+    ;; "w" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-week))
+    ;; 	 :which-key "my/nutrition-week")
+    ;; "s" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-search))
+    ;; 	 :which-key "my/nutrition-search")
+    ;; "e" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-edit-food))
+    ;; 	 :which-key "nutrition-edit-food")
+    ;; "R" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-refresh))
+    ;; 	 :which-key "my/nutrition-refresh")
+    ;; "o" ((lambda () (interactive)
+    ;; 	   ('my/nutrition-open))
+    ;; 	 :which-key "my/nutrition-open")
+    
+
     ;; ── Task Manipulation ─────────────────────────────────────────────────────
     "o t" '(org-todo                     :which-key "todo state")
     "o s" '(org-schedule                 :which-key "schedule")
@@ -498,6 +534,7 @@
     ;; ── Help (h) ─────────────────────────────────────────────────────────────
     "h"   '(:ignore t                 :which-key "help")
     "h k" '(describe-key              :which-key "key")
+    "h o" '(describe-symbol           :which-key "symbol")
     "h f" '(describe-function         :which-key "function")
     "h v" '(describe-variable         :which-key "variable")
     "h m" '(describe-mode             :which-key "mode")

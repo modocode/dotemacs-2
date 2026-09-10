@@ -44,7 +44,8 @@
 ;;   "Source Serif 4", "IBM Plex Serif", "Libre Baskerville", "Inter"
 
 
-(load-theme 'modus-operandi-tinted)
+;; (load-theme 'gruber-darker)
+(load-theme 'naysayer)
 (my/register-font 'default  "DejaVu Sans Mono"   110)  ; base/monospace face
 (my/register-font 'fixed    "DejaVu Sans Mono"   110)  ; code & inline code blocks
 (my/register-font 'variable "Inconsolata"       130)  ; prose in Org/text buffers

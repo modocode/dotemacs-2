@@ -91,7 +91,6 @@ Add machine-specific tools in your os/*.el with `add-to-list'.")
   "Fonts verified by `my/health-check' (GUI frames only).
 At least one of these should be present for core-ui.el to set a font correctly.
 Add machine-specific fonts in your os/*.el.")
-
 (defvar my/health-check-features
   ;; Every file that calls (provide 'SYMBOL) should appear here.
   ;; Symbols are checked with `featurep', which returns t only if the file
@@ -113,6 +112,8 @@ Add machine-specific fonts in your os/*.el.")
     org-config)
   "Feature symbols verified by `my/health-check'.
 Add your own modules here or in os/*.el with `add-to-list'.")
+
+
 
 (defvar my/health-check-extra nil
   "Additional check functions registered via `my/health-register-check'.
@@ -168,6 +169,8 @@ Example — verify a specific config file exists:
                                server)
            :optional t
            :linux ,install :macos ,install :windows ,install)))
+
+
 
 (defun my/health--check-paths ()
   "Check every entry in `my/paths' against the filesystem."
