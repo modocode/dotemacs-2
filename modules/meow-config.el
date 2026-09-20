@@ -2,8 +2,9 @@
 ;;
 ;; Meow is a modal editing system designed for Emacs.
 ;; Keys are arranged ergonomically around QWERTY home row.
-;; Loading this file triggers the with-eval-after-load 'meow callbacks
-;; in keybindings.el, which applies the SPC leader to meow's state keymaps.
+;; Enabled only when `my/modal-backend' is `meow'.
+
+(require 'mo-modal)
 
 (defun my/meow-setup ()
   "Configure meow keybindings for QWERTY layout."
@@ -117,6 +118,7 @@
     (indent-rigidly (line-beginning-position) (line-end-position) (- tab-width))))
 
 
+(when (eq my/modal-backend 'meow)
 (use-package meow
   :ensure t
   :demand t
@@ -130,6 +132,8 @@
 ;; defers meow's activation to after-init-hook, which is too late for the
 ;; with-eval-after-load 'meow callbacks in keybindings.el to apply properly.
 (elpaca-wait)
+
+) ; Meow backend
 
 (provide 'meow-config)
 ;;; meow-config.el ends here

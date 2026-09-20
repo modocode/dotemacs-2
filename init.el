@@ -1,5 +1,8 @@
 ;;; init.el --- Main entry point -*- lexical-binding: t; -*-
 
+;; Prefer edited source over stale bytecode, including modal backend changes.
+(setq load-prefer-newer t)
+
 (defvar my/emacs-dir
   (file-name-directory (or load-file-name buffer-file-name))
   "Absolute path to the directory containing init.el.
@@ -24,6 +27,8 @@ All load-path entries and file lookups use this instead of
 (add-to-list 'load-path (expand-file-name "os"      my/emacs-dir))
 (add-to-list 'load-path (expand-file-name "mo-lisp" my/emacs-dir))
 
+;; Define the backend before any auto-loaded module can activate it.
+(require 'mo-modal)
 (require 'mo-paths)
 (require 'mo-helpers)
 (require 'mo-health)

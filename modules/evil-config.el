@@ -1,11 +1,9 @@
 ;;; modules/evil.el --- Vim emulation -*- lexical-binding: t; -*-
 ;;
-;; Set my/use-evil to t (e.g. in init.el) to re-enable evil instead of meow.
+;; Set `my/modal-backend' to `evil' before startup to enable Evil.
+(require 'mo-modal)
 
-(defvar my/use-evil nil
-  "When non-nil, load evil instead of meow for modal editing.")
-
-(when my/use-evil
+(when (eq my/modal-backend 'evil)
 
 (use-package evil
   :ensure t
@@ -32,7 +30,7 @@
   :config
   (evil-escape-mode 1))
 
-) ; end (when my/use-evil)
+) ; Evil backend
 
 (provide 'evil-config)
 ;;; evil.el ends here
