@@ -1,24 +1,11 @@
 ;;; modules/keybindings.el --- Leader keybindings and hydra UIs -*- lexical-binding: t; -*-
 ;;
-;; which-key is configured in ui-tweaks.el — it must already be running by the
-;; time this file loads (modules/ is loaded alphabetically, k < u, so which-key
-;; will not yet be active).  That's fine — general.el attaches :which-key
-;; annotations at definition time; which-key reads them whenever it renders.
-
-;;; ── Hydras ───────────────────────────────────────────────────────────────────
-;; Hydras are transient keymaps that stay active until you press the quit key.
-;; Perfect for repetitive operations (resize a window several times, zoom in/out)
-;; without re-pressing the full prefix each time.
 
 (use-package hydra
   :ensure t
   :demand t
   :config
 
-  ;; ── Window Resize ─────────────────────────────────────────────────────────
-  ;; SPC w r — stay in the hydra, tap h/j/k/l repeatedly to resize.
-  ;; Lambda wrappers are required: commands with (interactive "p") receive nil
-  ;; instead of an integer when called by hydra under lexical-binding.
   (defhydra hydra-window-resize (:hint nil)
     "
   Window Resize
@@ -33,8 +20,6 @@
     ("=" balance-windows)
     ("q" nil :exit t))
 
-  ;; ── Text Scale ────────────────────────────────────────────────────────────
-  ;; SPC w z — zoom the current buffer's text up/down without affecting others.
   (defhydra hydra-text-scale (:hint nil)
     "
   Text Zoom
@@ -45,9 +30,6 @@
     ("0" (lambda () (interactive) (text-scale-set 0)) :exit t)
     ("q" nil :exit t))
 
-  ;; ── Git Hunks ─────────────────────────────────────────────────────────────
-  ;; SPC g h — navigate and act on diff-hl hunks without opening magit.
-  ;; Useful for quickly staging individual changes while staying in the buffer.
   (defhydra hydra-git-hunk (:hint nil)
     "
   Git Hunks
@@ -60,10 +42,6 @@
     ("d" (lambda () (interactive) (diff-hl-show-hunk)))
     ("q" nil :exit t))
 
-  ;; ── Org Navigate ──────────────────────────────────────────────────────────
-  ;; SPC o g — full-spectrum org navigation that stays alive until you quit.
-  ;; Repeatable keys (headings, structure moves, link/block jumps) keep the
-  ;; hydra open; destructive or mode-switching keys (:exit t) close it.
   (defhydra hydra-org-nav (:hint nil :foreign-keys warn)
     "
   ┌─────────────────────────── Org Navigate ───────────────────────────────┐
@@ -78,7 +56,6 @@
   └────────────────────────────────────────────────────────────────────────┘
   _q_ quit
 "
-    ;; ── Headings ──────────────────────────────────────────────────────────
     ("n"   org-next-visible-heading)
     ("p"   org-previous-visible-heading)
     ("f"   org-forward-heading-same-level)
@@ -114,9 +91,6 @@
     ;; ── Quit ──────────────────────────────────────────────────────────────
     ("q"   nil                     :exit t))
 
-  ;; ── Org Table ─────────────────────────────────────────────────────────────
-  ;; SPC o T — stay in the hydra to navigate and reshape tables; destructive
-  ;; or mode-switching actions (:exit t) close it automatically.
   (defhydra hydra-org-table (:hint nil :foreign-keys warn)
     "
   ┌─────────────────────────── Org Table ──────────────────────────────┐
@@ -152,10 +126,6 @@
     ;; ── Quit ──────────────────────────────────────────────────────────────
     ("q"   nil                        :exit t))
 
-  ;; ── Window Rotate ─────────────────────────────────────────────────────────
-  ;; SPC w t — cycle and set window layouts using emacs-rotate.
-  ;; `r' and `w' repeat without closing the hydra; layout setters exit since
-  ;; they replace the entire arrangement and you rarely want to chain them.
   (defhydra hydra-window-rotate (:hint nil)
     "
   ┌─────────────────── Window Rotate ───────────────────────┐
@@ -175,10 +145,6 @@
     ("t" rotate:tiled             :exit t)
     ("q" nil                      :exit t))
 
-  ;; ── Tabs ──────────────────────────────────────────────────────────────────
-  ;; SPC T — two-layer tab management:
-  ;;   Buffer tabs  (centaur-tabs): n/p navigate, N/P switch group, < > reorder
-  ;;   Workspace tabs (tab-bar):    c new, x close, r rename, s switch by name
   (defhydra hydra-tabs (:hint nil)
     "
   Buffer tabs  _n_ next  _p_ prev  _a_ first  _e_ last  _<_ move←  _>_ move→
@@ -229,10 +195,6 @@
      :exit t)
     ("q" nil :exit t))
 
-  ;; ── Embark ────────────────────────────────────────────────────────────────
-  ;; SPC a . — quick access to all embark entry points without memorising
-  ;; the individual keys.  embark-act / embark-dwim are the two you'll hit
-  ;; most often; the rest are for collect/export workflows.
   (defhydra hydra-embark (:hint nil :foreign-keys warn)
     "
   ┌────────────────────────── Embark ──────────────────────────────┐
@@ -252,21 +214,53 @@
     ("q" nil                     :exit t)))
 
 ;;; ── General ──────────────────────────────────────────────────────────────────
-;; general.el is the standard way to define evil leader bindings.
-;; SPC is the leader in meow normal/motion states; M-SPC works globally.
+(require 'mo-modal)
+;; Register new commands even when `mo-modal' is already loaded during reload.
+(autoload 'mo-modal-tutor "mo-modal-tutor"
+  "Open a fresh buffer of hands-on modal editing lessons." t)
+(defvar my/leader-map (make-sparse-keymap)
+  "Shared leader menu, independent of the editing backend.")
 
 (use-package general
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
-  ;; SPC leader — meow normal and motion states.
-  ;; Bindings are applied inside (with-eval-after-load 'meow) below because
-  ;; meow-normal-state-keymap must exist before general can bind into it,
-  ;; and meow-config.el (m) loads after keybindings.el (k) alphabetically.
-  (general-create-definer my/leader
-    :keymaps '(meow-normal-state-keymap meow-motion-state-keymap)
-    :prefix  "SPC"
-    :global-prefix "M-SPC")
+  (general-create-definer my/leader :keymaps 'my/leader-map)
+  (general-define-key :keymaps 'global-map "M-SPC" my/leader-map)
+  (general-define-key :keymaps 'mo-modal-mode-map
+    "<escape>" #'mo-modal-enter-command
+    ;; Keep raw ESC available for Meta sequences in terminals.
+    "C-c C-g" #'mo-modal-enter-command)
+  (general-define-key :keymaps 'mo-modal-command-map
+    "SPC" my/leader-map
+    "i" #'mo-modal-enter-write
+    ;; Familiar Meow pair; keep God character motions and prefix maps intact.
+    "u" #'backward-word
+    "o" #'forward-word
+    "v" #'mo-modal-expand
+    "V" #'mo-modal-contract
+    "C-SPC" #'mo-modal-enter-select
+    "C-@" #'mo-modal-enter-select
+    "<escape>" #'mo-modal-enter-command)
+  (general-define-key :keymaps 'mo-modal-select-map
+    "s" #'mo-modal-cut
+    "c" #'mo-modal-copy
+    "d" #'mo-modal-delete
+    "h" #'mo-modal-change
+    ";" #'exchange-point-and-mark
+    ">" #'mo-modal-indent-right
+    "<" #'mo-modal-indent-left
+    "(" (lambda () (interactive) (mo-modal-surround "(" ")"))
+    "[" (lambda () (interactive) (mo-modal-surround "[" "]"))
+    "{" (lambda () (interactive) (mo-modal-surround "{" "}"))
+    "\"" (lambda () (interactive) (mo-modal-surround "\"" "\""))
+    "'" (lambda () (interactive) (mo-modal-surround "'" "'")))
+
+  ;; Reuse the menu when the backend is switched back to Meow.
+  (with-eval-after-load 'meow
+    (general-define-key
+     :keymaps '(meow-normal-state-keymap meow-motion-state-keymap)
+     "SPC" my/leader-map))
 
 
   ;; General Keybindings For Nutrition Tracking
@@ -276,31 +270,23 @@
   ;; SPC m local leader — for mode-specific bindings added in other modules.
   ;; Example: (my/local-leader :keymaps 'python-mode-map "r" #'run-python)
   (general-create-definer my/local-leader
-    :keymaps '(meow-normal-state-keymap meow-motion-state-keymap)
+    :keymaps 'mo-modal-command-map
     :prefix  "SPC m"
     :global-prefix "M-SPC m")
 
   ;; Enable recentf so SPC f r works.
-  (recentf-mode 1))
-
-;; Leader bindings are deferred until meow loads so its state keymaps exist.
-(with-eval-after-load 'meow
-  ;; Meow binds SPC → meow-keypad by default.  Remove it so general can
-  ;; install its own prefix map there.  This must happen before my/leader
-  ;; makes its first binding under the SPC prefix.
-  (define-key meow-normal-state-keymap (kbd "SPC") nil)
-  (define-key meow-motion-state-keymap (kbd "SPC") nil)
+  (recentf-mode 1)
 
   (my/leader
 
-    ;; ── Top-level ────────────────────────────────────────────────────────────
+    ;; Top Level
     "SPC" '(execute-extended-command :which-key "M-x")
     ":"   '(eval-expression           :which-key "eval expr")
     ";"   '(comment-dwim              :which-key "comment")
     "X"   '(my/health-check           :which-key "health check")
     "k"   '(browse-kill-ring          :which-key "clipboard")
 
-    ;; ── Buffers (b) ──────────────────────────────────────────────────────────
+    ;; Buffer Managment
     "b"   '(:ignore t                 :which-key "buffer")
     "b b" '(consult-buffer            :which-key "switch")
     "b k" '(kill-current-buffer       :which-key "kill")
@@ -310,7 +296,7 @@
     "b r" '(revert-buffer             :which-key "revert")
     "b s" '(save-buffer               :which-key "save")
 
-    ;; ── Files (f) ────────────────────────────────────────────────────────────
+    ;; File Operations
     "f"   '(:ignore t                 :which-key "file")
     "f f" '(find-file                 :which-key "find file")
     "f r" '(consult-recent-file       :which-key "recent files")
@@ -323,13 +309,14 @@
     "f v" '(vundo                     :which-key "undo tree")
     "f b" '(bookmark-bmenu-list       :which-key "bookmarks")
 
-    ;; ── Windows (w) ──────────────────────────────────────────────────────────
+    ;; Window Managment
     "w"   '(:ignore t                 :which-key "window")
     "w v" '(split-window-right        :which-key "split right")
     "w s" '(split-window-below        :which-key "split below")
     "w d" '(delete-window             :which-key "delete")
     "w o" '(delete-other-windows      :which-key "only this")
     "w h" '(windmove-left              :which-key "go ←")
+    "w S" '(scratch-buffer              :which-key "go ←")
     "w j" '(windmove-down             :which-key "go ↓")
     "w k" '(windmove-up               :which-key "go ↑")
     "w l" '(windmove-right            :which-key "go →")
@@ -339,13 +326,13 @@
     "w z" '(hydra-text-scale/body          :which-key "zoom…")
     "w t" '(hydra-window-rotate/body       :which-key "rotate…")
 
-    ;; ── Jump (j) — avy ───────────────────────────────────────────────────────
+    ;; Jump With Avy
     "j"   '(:ignore t                 :which-key "jump")
     "j j" '(avy-goto-char-timer       :which-key "char timer")
     "j w" '(avy-goto-word-1           :which-key "word")
     "j l" '(avy-goto-line             :which-key "line")
 
-    ;; ── Projects (p) ─────────────────────────────────────────────────────────
+    ;; Project Commands
     "p"   '(:ignore t                 :which-key "project")
     "p p" '(project-switch-project    :which-key "switch")
     "p f" '(project-find-file         :which-key "find file")
@@ -355,7 +342,7 @@
     "p e" '(project-eshell            :which-key "eshell")
     "p k" '(project-kill-buffers      :which-key "kill buffers")
 
-    ;; ── Git (g) ──────────────────────────────────────────────────────────────
+    ;; Git Commands 
     "g"   '(:ignore t                 :which-key "git")
     "g g" '(magit-status              :which-key "status")
     "g b" '(magit-blame               :which-key "blame")
@@ -366,7 +353,7 @@
     "g t" '(git-timemachine           :which-key "timemachine")
     "g h" '(hydra-git-hunk/body       :which-key "hunks…")
 
-    ;; ── Search (s) ───────────────────────────────────────────────────────────
+    ;; Searching With Consult
     "s"   '(:ignore t                 :which-key "search")
     "s s" '(consult-line              :which-key "line")
     "s g" '(consult-grep              :which-key "grep")
@@ -376,10 +363,10 @@
     "s i" '(consult-imenu             :which-key "imenu")
     "s p" '(project-find-regexp       :which-key "in project")
 
-    ;; ── Org & Notes (o) ──────────────────────────────────────────────────────
+    ;; Org Commands
     "o"   '(:ignore t                    :which-key "org / life")
 
-    ;; ── Capture / Processing ──────────────────────────────────────────────────
+    ;; Capture/Process
     "o c" '(org-capture                  :which-key "capture…")
     "o i" '(my/org-process-inbox         :which-key "process inbox")
     "o R" '(org-refile                   :which-key "refile…")
@@ -387,7 +374,8 @@
     "o A" '(org-archive-subtree          :which-key "archive")
     "o x" '(my/org-archive-done-items    :which-key "archive done")
 
-    ;; ── Command Center / Views ────────────────────────────────────────────────
+
+    ;; Org Agenda Views
     "o a" '(org-agenda                  :which-key "agenda…")
     "o d" '((lambda () (interactive)
               (org-agenda nil "d"))
@@ -411,7 +399,8 @@
               (org-agenda nil "p"))
             :which-key "projects")
 
-    ;; ── Academic / Deadline Views ─────────────────────────────────────────────
+
+    ;; School
     "o e" '((lambda () (interactive)
               (org-agenda nil "x"))
             :which-key "exams")
@@ -419,7 +408,7 @@
               (org-agenda nil "a"))
             :which-key "assignments")
 
-    ;; ── Context Views ─────────────────────────────────────────────────────────
+    ;; Context views
     "o C" '(:ignore t                    :which-key "contexts")
     "o C h" '((lambda () (interactive)
                 (org-agenda nil "ch"))
@@ -471,7 +460,7 @@
     ;; 	 :which-key "my/nutrition-open")
     
 
-    ;; ── Task Manipulation ─────────────────────────────────────────────────────
+    ;; Task Management
     "o t" '(org-todo                     :which-key "todo state")
     "o s" '(org-schedule                 :which-key "schedule")
     "o D" '(org-deadline                 :which-key "deadline")
@@ -479,16 +468,13 @@
     "o g" '(hydra-org-nav/body            :which-key "navigate…")
     "o T" '(hydra-org-table/body          :which-key "table…")
 
-    ;; ── Search / Knowledge ────────────────────────────────────────────────────
+    ;; Org Ql Commands
     "o Q" '((lambda () (interactive)
               (org-agenda nil "q"))
             :which-key "questions")
     "o V" '(org-ql-search                :which-key "QL search…")
 
-    ;; ── Denote / Knowledge Base ────────────────────────────────────────────────
-    ;;
-    ;; Org answers: "What do I need to do?"
-    ;; Denote answers: "What do I know?"
+    ;; Org Denote Commands 
     "o N" '(denote                      :which-key "new knowledge note")
     "o O" '(denote-open-or-create       :which-key "open/create note")
     "o L" '(denote-link                 :which-key "link note")
@@ -496,12 +482,13 @@
     "o G" '(denote-grep                 :which-key "grep notes")
     "o F" '(denote-dired                :which-key "browse notes")
 
-    ;; ── Org Navigation ────────────────────────────────────────────────────────
+    ;; Org Navigation
     "o j" '(org-goto                    :which-key "goto heading")
     "o l" '(org-store-link              :which-key "store link")
     "o b" '(org-switchb                 :which-key "switch org buffer")
 
-    ;; ── Log / Clock (l) ──────────────────────────────────────────────────────
+
+    ;; Log/Clock
     "l"   '(:ignore t                      :which-key "log / clock")
     "l l" '(hydra-clock/body               :which-key "clock menu…")
     "l i" '(org-clock-in                   :which-key "clock in")
@@ -512,10 +499,11 @@
     "l p" '(org-pomodoro                   :which-key "pomodoro")
     "l c" '(org-clock-cancel               :which-key "cancel clock")
     
-    ;; ── Code (c) ─────────────────────────────────────────────────────────────
+    ;; Code Commands
     "c"   '(:ignore t                 :which-key "code")
     "c c" '(compile                   :which-key "compile")
     "c r" '(recompile                 :which-key "recompile")
+    "c t" '(vterm                 :which-key "vterm")
     "c d" '(xref-find-definitions     :which-key "definition")
     "c D" '(xref-find-references      :which-key "references")
     "c f" '(eglot-format-buffer       :which-key "format")
@@ -523,7 +511,7 @@
     "c e" '(my/toggle-eglot           :which-key "toggle LSP")
     "c p" '(my/insert-debug-print     :which-key "debug print")
 
-    ;; ── Eval (e) ─────────────────────────────────────────────────────────────
+    ;; Evaluation
     "e"   '(:ignore t                 :which-key "eval")
     "e e" '(eval-last-sexp            :which-key "last sexp")
     "e b" '(eval-buffer               :which-key "buffer")
@@ -531,9 +519,10 @@
     "e f" '(eval-defun                :which-key "defun")
     "e i" '(my/reload-init            :which-key "reload init")
 
-    ;; ── Help (h) ─────────────────────────────────────────────────────────────
+    ;; "Ask Emacs For Help" Prot"
     "h"   '(:ignore t                 :which-key "help")
     "h k" '(describe-key              :which-key "key")
+    "h t" '(mo-modal-tutor            :which-key "modal tutor")
     "h o" '(describe-symbol           :which-key "symbol")
     "h f" '(describe-function         :which-key "function")
     "h v" '(describe-variable         :which-key "variable")
@@ -541,7 +530,8 @@
     "h p" '(describe-package          :which-key "package")
     "h i" '(info                      :which-key "info")
 
-    ;; ── Actions / Embark (a) ─────────────────────────────────────────────────
+
+    ;; Embark
     "a"   '(:ignore t                 :which-key "actions / embark")
     "a ." '(hydra-embark/body         :which-key "embark menu…")
     "a a" '(embark-act                :which-key "act")
@@ -550,28 +540,28 @@
     "a e" '(embark-export             :which-key "export")
     "a b" '(embark-bindings           :which-key "bindings")
 
-    ;; ── Tabs (T) ─────────────────────────────────────────────────────────────
+    ;; Tabs
     "T"   '(hydra-tabs/body           :which-key "tabs…")
 
-    ;; ── Toggle (t) ───────────────────────────────────────────────────────────
+    ;; Toggle
     "t"   '(:ignore t                 :which-key "toggle")
     "t n" '(display-line-numbers-mode :which-key "line numbers")
     "t w" '(visual-line-mode          :which-key "word wrap")
     "t t" '(load-theme                :which-key "load theme")
     "t d" '(toggle-debug-on-error     :which-key "debug on error")
 
-    ;; ── Feeds (r) — elfeed ───────────────────────────────────────────────────
+    ;; Elfeed
     "r"   '(:ignore t               :which-key "feeds")
     "r r" '(elfeed                  :which-key "open elfeed")
     "r u" '(elfeed-update           :which-key "update feeds")
     "r R" '(my/elfeed-mark-all-read :which-key "mark all read")
 
-    ;; ── Quit (q) ─────────────────────────────────────────────────────────────
+   ;; Quit/Reload
     "q"   '(:ignore t                 :which-key "quit")
     "q q" '(save-buffers-kill-terminal :which-key "quit emacs")
     "q r" '(my/reload-init             :which-key "reload config")))
 
-;;; ── Health registration ──────────────────────────────────────────────────────
+
 
 (with-eval-after-load 'mo-health
   (add-to-list 'my/health-check-features 'keybindings t))
