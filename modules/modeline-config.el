@@ -16,6 +16,10 @@
 
 ;;; ── doom-modeline ────────────────────────────────────────────────────────────
 
+;; `misc-info' is displayed by Doom even with minor-mode lighters hidden.
+(require 'mo-modal)
+(add-to-list 'mode-line-misc-info '(:eval (mo-modal-indicator)) t)
+
 (use-package doom-modeline
   :ensure t
   :demand t

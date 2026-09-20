@@ -8,7 +8,16 @@
 (use-package solarized-theme :ensure t)
 (use-package gruvbox-theme  :ensure t)
 
+(use-package doric-themes
+  :ensure t
+  :demand t
+  :config
+  ;; These are the default values.
+  (setq doric-themes-to-toggle '(doric-light doric-dark))
+  (setq doric-themes-to-rotate doric-themes-collection)
+)
 
+  
 (use-package base16-theme
   :ensure t
   :demand t
