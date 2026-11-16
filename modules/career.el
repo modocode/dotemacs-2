@@ -1186,22 +1186,8 @@ Otherwise a temporary *BOM* buffer is opened."
         (goto-char (point-min))
         (message "BOM in temp buffer — C-c C-c on #+TBLFM to recalculate.")))))
 
-;;; ── Capture templates + keybindings ─────────────────────────────────────────
-;; Both are deferred to elpaca-after-init-hook, which fires after ALL packages
-;; are fully loaded and configured.  This avoids two race conditions:
-;;
-;;   1. Keybinding race: career.el (alphabetically "c") registers its
-;;      with-eval-after-load 'meow callback before keybindings.el ("k") does.
-;;      When meow loads, career's callback would fire first — before
-;;      keybindings.el has run `(define-key meow-normal-state-keymap "SPC" nil)`
-;;      — so SPC is still a terminal key and "SPC C i" fails.
-;;
-;;   2. Capture template race: org-capture-templates is defined in org-capture.el,
-;;      not org.el.  A with-eval-after-load 'org callback fires before org-capture
-;;      is loaded, so the variable is void and add-to-list errors out.
-;;
-;; By elpaca-after-init-hook: meow SPC is cleared, my/leader is defined,
-;; org-config.el's setq has run, and org-capture-templates exists.
+;;; ── Capture templates ───────────────────────────────────────────────────────
+;; Register after org-config has set up the capture templates.
 
 (add-hook 'elpaca-after-init-hook
           (lambda ()
@@ -1261,29 +1247,7 @@ Otherwise a temporary *BOM* buffer is opened."
                            :immediate-finish t)
                          t)
 
-            ;; ── Keybindings ─────────────────────────────────────────────────
-            ;; SPC C prefix (capital C = Career).
-            ;; SPC P prefix (capital P = PRIMED).
-            ;; SPC c is taken by Code bindings in keybindings.el.
-            (my/leader
-              "C"   '(:ignore t                  :which-key "career")
-              "C i" '(career/initialize          :which-key "initialize files")
-              "C R" '(career/rewrite-readme      :which-key "rewrite README")
-              "C p" '(career/new-project         :which-key "new project")
-              "C s" '(career/new-star-story      :which-key "new STAR story")
-              "C I" '(career/prep-for-interview  :which-key "interview prep")
-              "C e" '(career/skill-evidence      :which-key "skill evidence")
-              "C r" '(career/update-result       :which-key "log result")
-              "C b" '(career/new-bom            :which-key "new BOM table")
-              "C c" '(org-capture                :which-key "capture")
-
-              "P"   '(:ignore t                  :which-key "PRIMED")
-              "P n" '(primed/new-project         :which-key "new project")
-              "P m" '(primed/log-measurement     :which-key "log measurement")
-              "P s" '(primed/session-start       :which-key "session start")
-              "P e" '(primed/session-end         :which-key "session end")
-              "P c" '(primed/close-project       :which-key "close project")
-              "P d" '(primed/dashboard           :which-key "dashboard"))))
+            ))
 
 ;;; ── Health registration ──────────────────────────────────────────────────────
 

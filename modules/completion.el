@@ -81,9 +81,6 @@
 
 
 
-;;; ── Marginalia ──────────────────────────────────────────────────────────────
-;; Adds helpful annotations to minibuffer candidates: function docstrings for
-;; M-x, file sizes for find-file, key bindings for describe-function, etc.
 
 (use-package marginalia
   :after vertico
@@ -92,14 +89,6 @@
   :config
   (marginalia-mode 1))
 
-;;; ── Consult ─────────────────────────────────────────────────────────────────
-;; Provides enhanced commands that replace or complement built-ins:
-;;   consult-line     → better isearch (live preview)
-;;   consult-buffer   → better C-x b (groups by type)
-;;   consult-grep     → grep with live preview
-;;   consult-imenu    → jump to definition in file
-;;
-;; Deliberately minimal keybinds here — add more in a dedicated bindings module.
 
 (use-package consult
   :ensure t
@@ -109,13 +98,16 @@
    ("M-s g" . consult-grep)
    ("M-g i" . consult-imenu)))
 
-;;; ── Corfu ───────────────────────────────────────────────────────────────────
-;; In-buffer popup completion that reads from `completion-at-point-functions'
-;; (CAPF).  Eglot, elisp-completion, yasnippet, and others all populate CAPF,
-;; so corfu provides completion for all of them with one configuration.
-;;
-;; corfu deliberately replaces company-mode and auto-complete — do NOT enable
-;; either of those alongside it.
+
+
+(use-package consult-notes
+  :ensure t
+  :commands (consult-notes consult-notes-search-in-all-notes)
+  :bind (("M-s n" . consult-notes)                       ; search notes by title
+         ("M-s N" . consult-notes-search-in-all-notes))  ; full-text across notes
+  :config
+  ;; Reads denote-directory automatically (no second path to maintain)
+  (consult-notes-denote-mode))
 
 (use-package corfu
   :ensure t

@@ -15,6 +15,11 @@
       gc-cons-percentage 0.6)
 
 ;;; ── 2. Prevent GUI Flicker ──────────────────────────────────────────────────
+;; PGTK uses GTK for title bars and dialogs.  Select the installed macOS-style
+;; theme before GTK initializes, rather than inheriting the old desktop theme.
+(when (eq system-type 'gnu/linux)
+  (setenv "GTK_THEME" "Sierra-light"))
+
 ;; Setting these in `default-frame-alist' applies BEFORE the first frame is
 ;; drawn, so you never see a flash of the toolbar or scroll-bar.
 (push '(menu-bar-lines . 0)     default-frame-alist)

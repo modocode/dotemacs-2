@@ -7,6 +7,100 @@
 ;; macros in core-lib.el which are building blocks for other config code.
 
 (require 'cl-lib)  ; for cl-some, cl-remove-if
+(require 'core-lib)
+(require 'mo-paths)
+
+;;; my custom helpers that i wrote
+
+(defvar my/keyboard-layout "colemak"
+  "This represents the keyboard layout i am using on my system"
+  )
+
+(defvar my/enable-qwerty nil)
+
+
+
+(defun my-process--my-keyboard-layout ()
+  (if (and (not (eq my/keyboard-layout "QWERTY")) (eq my/enable-qwerty nil))
+      (setq my/enable-qwerty t)))
+
+
+
+
+
+
+;;; ── Fonts and Scratch Buffers ──────────────────────────────────────────────
+
+(defun my/choose-font ()
+  "Choose a font role, installed family, and point size, then preview it.
+Accepting updates `my/fonts' and applies that role.  Declining or quitting
+restores the previous font.  Changes are session-only; use
+`my/register-font' in your OS config to persist them."
+  (interactive)
+  (unless (display-graphic-p)
+    (user-error "Choose fonts in a graphical frame; terminals manage their own fonts"))
+  (let* ((role (intern (completing-read "Font role: "
+                                      '("default" "fixed" "variable")
+                                      nil t nil nil "default")))
+         (face (pcase role ('fixed 'fixed-pitch)
+                      ('variable 'variable-pitch) (_ 'default)))
+         (family (completing-read "Font family: "
+                                  (sort (delete-dups (font-family-list)) #'string-lessp)
+                                  nil t nil nil (face-attribute face :family nil t)))
+         (size (read-number "Size in points: " (/ (my/font-height role) 10.0)))
+         (frame (selected-frame))
+         (old-font (face-attribute face :font frame))
+         (old-height (face-attribute face :height frame))
+         accepted)
+    (unless (> size 0)
+      (user-error "Font size must be positive"))
+    (unwind-protect
+        (progn
+          (set-face-attribute face frame :family family :height (max 1 (round (* size 10))))
+          (redisplay t)
+          (setq accepted (yes-or-no-p (format "Keep %s at %g pt for %s? " family size role))))
+      (when (frame-live-p frame)
+        (set-face-attribute face frame :font old-font :height old-height)))
+    (when accepted
+      (my/register-font role family (max 1 (round (* size 10))))
+      (my/apply-font role)
+      (message "Selected %s at %g pt for %s (this session)" family size role))))
+
+(defun my/show-font ()
+  "Display active face fonts and, when available, the font at point.
+Read the actual frame faces rather than the configured `my/fonts' registry.
+The font at point can differ because of buffer styling or glyph fallback."
+  (interactive)
+  (if (not (display-graphic-p))
+      (message "Terminal fonts are controlled by your terminal emulator")
+    (let ((font (and (< (point) (point-max)) (font-at (point)))))
+      (message "%s%s"
+               (mapconcat
+                (lambda (face)
+                  (format "%s: %s (%g pt)" face
+                          (face-attribute face :family nil t)
+                          (/ (face-attribute face :height nil t) 10.0)))
+                '(default fixed-pitch variable-pitch) "; ")
+               (if font (format "; at point: %s" (font-get font :family)) "")))))
+
+(defun my/scratch-buffer ()
+  "Create a new scratch buffer using the current major mode and directory.
+Special or read-only buffers use `fundamental-mode' for an editable scratch.
+Each invocation creates a separate buffer without altering `*scratch*'."
+  (interactive)
+  (let* ((mode (if (or buffer-read-only (derived-mode-p 'special-mode)
+                       (eq (get major-mode 'mode-class) 'special))
+                   'fundamental-mode
+                 major-mode))
+         (directory default-directory)
+         (buffer (generate-new-buffer (format "*scratch:%s*" mode))))
+    (with-current-buffer buffer
+      (setq default-directory directory)
+      (funcall mode)
+      (setq default-directory directory)
+      (setq buffer-read-only nil))
+    (pop-to-buffer buffer)
+    buffer))
 
 ;;; ── Project Root Detection ──────────────────────────────────────────────────
 

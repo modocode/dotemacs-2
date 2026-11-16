@@ -8,7 +8,15 @@
   ;; load default config
   (require 'smartparens-config))
 
+;;(add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
 
+
+(use-package tree-guide
+  ;; add `git clone` directory to elisp load path
+  :load-path "~/git/tree-guide.el/"
+  ;; Automatic activation triggers a daemon GC hang with this Emacs build.
+  ;; Keep the mode available explicitly while investigating compatibility.
+  :commands tree-guide-mode)
 
 (use-package surround
   :ensure t

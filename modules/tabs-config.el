@@ -6,7 +6,6 @@
 ;;   awesome-tab   — buffer tabs within the current workspace, grouped by
 ;;                   project root or major mode.
 ;;
-;; Navigate both with SPC T (hydra-tabs defined in keybindings.el).
 
 ;;; ── Built-in workspace tabs ──────────────────────────────────────────────────
 

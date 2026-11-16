@@ -1,41 +1,5 @@
 ;;; modules/nix-config.el --- NixOS/Nix development support -*- lexical-binding: t; -*-
 ;;
-;; PROBLEM THIS MODULE SOLVES
-;; ──────────────────────────
-;; Three bottlenecks existed between "open a nix project" and "LSP works":
-;;
-;;   1. TIMING RACE — eglot-ensure fires from the major-mode hook, which runs
-;;      BEFORE find-file-hook.  envrc-global-mode hooks into find-file-hook, so
-;;      by the time eglot looks for the LSP binary, envrc hasn't applied the
-;;      nix devshell's PATH yet.  LSP silently fails to start.
-;;
-;;   2. NO .envrc — New projects need manual: SPC n e → SPC n a → wait.
-;;
-;;   3. NO flake.nix — Bootstrapping a new project requires writing nix by hand.
-;;
-;; WHAT THIS MODULE DOES
-;; ──────────────────────
-;;   A. envrc→eglot bridge  — advises `envrc--apply'; starts eglot in the same
-;;      buffer after the nix env is applied.  Fixes the timing race for ALL
-;;      supported modes (Python, C/C++, Zig, Nix).
-;;
-;;   B. Auto-setup prompt   — on find-file-hook, detects a nix project without
-;;      .envrc and offers (once per project, non-blocking) to create + allow it.
-;;
-;;   C. Flake scaffold      — `my/nix-new-flake' (SPC n N) generates a
-;;      language-specific flake.nix using flake-utils for cross-platform devShells.
-;;
-;;   D. One-shot setup      — `my/nix-project-setup' (SPC n S) wires up a full
-;;      project in one command: create .envrc → direnv allow → reload → start eglot.
-;;
-;; LOAD ORDER
-;; ──────────
-;; keybindings.el (k) loads before nix-config.el (n), so my/leader is defined.
-;; lang-lsp.el (l) loads before nix-config.el (n), so my/use-eglot is defined.
-
-;;; ── nix-mode ─────────────────────────────────────────────────────────────────
-;; Syntax highlighting, indentation, and nixfmt integration for .nix files.
-;; :mode is a sufficient trigger — no :demand t needed.
 
 (use-package nix-mode
   :ensure t
@@ -45,43 +9,20 @@
   ;; Override to "nixpkgs-fmt" in os/linux.el if your setup uses the older tool.
   (nix-nixfmt-bin "nixfmt"))
 
-;;; ── envrc ────────────────────────────────────────────────────────────────────
-;; Integrates direnv with Emacs by setting process-environment buffer-locally.
-;; This is the mechanism that makes eglot (and compile, eshell, etc.) find the
-;; nix-shell's LSP server and tools instead of whatever's on the system PATH.
-;;
-;; Guarded by my/with-binary so Emacs boots cleanly without direnv installed.
 
 (my/with-binary "direnv"
   (use-package envrc
     :ensure t
     :demand t   ; envrc-global-mode must activate at startup, not lazily
-    :config
-    (envrc-global-mode)))
+    :hook
+    (after-init . envrc-global-mode)
+    )
+)
 
-;;; ────────────────────────────────────────────────────────────────────────────
-;;; ── A. envrc → eglot Bridge ──────────────────────────────────────────────────
-;;; ────────────────────────────────────────────────────────────────────────────
-;;
-;; WHY THIS IS NEEDED
-;; ──────────────────
-;; Emacs's find-file sequence:
-;;
-;;   find-file-noselect
-;;     → major-mode function (e.g. python-mode)
-;;         → python-mode-hook fires → eglot-ensure runs here
-;;     → find-file-hook fires → envrc--update runs here
-;;                                  → envrc--apply sets process-environment
-;;
-;; eglot-ensure sees the *global* PATH (missing nix tools) and either fails
-;; silently or picks up a stale system binary.  By the time envrc is done,
-;; eglot has already given up.
-;;
-;; THE FIX
-;; ───────
-;; Advise envrc--apply with :after.  When envrc successfully applies a nix env
-;; (detectable by /nix/store/ on PATH), call eglot-ensure in that buffer.
-;; eglot-ensure is idempotent — if a server is already running it's a no-op.
+
+(use-package direnv
+ :config
+ (direnv-mode))
 
 (defun my/nix--env-path ()
   "Return the PATH string from the current buffer's process-environment."
@@ -125,15 +66,6 @@ This function is advised after `envrc--apply'."
 (with-eval-after-load 'envrc
   (advice-add 'envrc--apply :after #'my/nix--after-envrc-apply))
 
-;;; ────────────────────────────────────────────────────────────────────────────
-;;; ── B. Auto-setup: .envrc creation prompt ────────────────────────────────────
-;;; ────────────────────────────────────────────────────────────────────────────
-;;
-;; When visiting a file in a nix project that has no .envrc, offer to create
-;; one and run direnv allow automatically.  The prompt is deferred 0.3s so it
-;; appears after the buffer is visible (non-blocking find-file).
-;;
-;; "No" is remembered per project-root for the session so you're not asked again.
 
 (defvar my/nix--declined-setup (make-hash-table :test 'equal)
   "Hash set of project roots where the user declined auto .envrc setup.
@@ -168,17 +100,6 @@ projects where the user already declined this session."
          root (current-buffer))))))
 
 (add-hook 'find-file-hook #'my/nix--auto-setup-maybe)
-
-;;; ────────────────────────────────────────────────────────────────────────────
-;;; ── C. Flake Scaffold ────────────────────────────────────────────────────────
-;;; ────────────────────────────────────────────────────────────────────────────
-;;
-;; `my/nix-new-flake' (SPC n N) generates a starter flake.nix.
-;; Templates use flake-utils for cross-platform devShells (works on
-;; x86_64-linux, aarch64-linux, aarch64-darwin, x86_64-darwin).
-;;
-;; After writing the file, offers to create .envrc + direnv allow so the
-;; project is ready to use immediately.
 
 (defvar my/nix-flake-templates
   `(("python"
@@ -326,6 +247,7 @@ projects where the user already declined this session."
   "Alist of (KEY DESCRIPTION CONTENT) flake.nix templates.
 Used by `my/nix-new-flake' (SPC n N).")
 
+
 (defun my/nix-new-flake ()
   "Scaffold a flake.nix at the current project root.
 
@@ -361,17 +283,6 @@ immediately after the flake is built by nix."
         (let ((default-directory root))
           (my/nix-create-envrc--silent))))))
 
-;;; ────────────────────────────────────────────────────────────────────────────
-;;; ── D. One-shot Project Setup ────────────────────────────────────────────────
-;;; ────────────────────────────────────────────────────────────────────────────
-;;
-;; `my/nix-project-setup' wires up a project from scratch in one command:
-;;   1. Creates .envrc if missing
-;;   2. Runs direnv allow
-;;   3. Reloads envrc so the buffer's process-environment is updated
-;;   4. Starts eglot
-;;
-;; Use this when auto-setup (B) was declined, or when something got out of sync.
 
 (defun my/nix-project-setup ()
   "One-shot: create .envrc → direnv allow → reload env → start eglot.
@@ -403,11 +314,6 @@ Each step is skipped if it's already done."
     (my/nix--maybe-start-eglot)
     (message "[nix] Project setup complete.  Run `SPC n c' to verify status.")))
 
-;;; ────────────────────────────────────────────────────────────────────────────
-;;; ── Helper Functions ─────────────────────────────────────────────────────────
-;;; ────────────────────────────────────────────────────────────────────────────
-
-;;; ── Shell Type Detection ─────────────────────────────────────────────────────
 
 (defun my/nix-shell-type ()
   "Return the Nix shell type for the current project.
@@ -424,7 +330,6 @@ also prints the result to the minibuffer."
       (message "[nix] Shell type: %s" (or type "none (no flake.nix or shell.nix found)")))
     type))
 
-;;; ── Open Shell File ──────────────────────────────────────────────────────────
 
 (defun my/nix-open-shell-file ()
   "Open flake.nix or shell.nix for the current project.
@@ -443,7 +348,6 @@ exists above `default-directory'."
       (user-error "[nix] No flake.nix or shell.nix found above %s"
                   default-directory))))
 
-;;; ── Create .envrc (silent variant for programmatic use) ──────────────────────
 
 (defun my/nix-create-envrc--silent ()
   "Create .envrc at the project root without any interactive prompts.
@@ -465,7 +369,6 @@ Writes \\='use flake\\=' or \\='use nix\\=' based on shell type, then runs
     (when (executable-find "direnv")
       (my/nix-direnv-allow))))
 
-;;; ── Create .envrc (interactive) ──────────────────────────────────────────────
 
 (defun my/nix-create-envrc ()
   "Create a .envrc at the project root with the appropriate nix directive.
@@ -494,7 +397,6 @@ immediately after writing."
                (yes-or-no-p "Run `direnv allow' now? "))
       (my/nix-direnv-allow))))
 
-;;; ── direnv allow ─────────────────────────────────────────────────────────────
 
 (defun my/nix-direnv-allow ()
   "Run `direnv allow' at the project root containing .envrc.
@@ -518,17 +420,7 @@ Refreshes the current buffer's environment via envrc-reload on success."
         (user-error "[nix] `direnv allow' failed (exit %d) in %s"
                     exit-code root)))))
 
-;;; ── Load Nix Environment into Buffer (fallback, no direnv) ───────────────────
 ;;
-;; The primary path is direnv + envrc.  Use my/nix-load-env when you want to
-;; load a nix env into one buffer WITHOUT committing a .envrc to the project.
-;;
-;; For flake.nix : `nix print-dev-env --json'  (fast — no shell spawned)
-;; For shell.nix  : `nix-shell --run env -0'   (starts a shell, reads env)
-;;
-;; Both commands run asynchronously so Emacs stays responsive.
-;; With prefix arg (C-u SPC n l), also restarts eglot after loading.
-
 (defun my/nix--parse-dev-env-json (json-str)
   "Extract exported variables from `nix print-dev-env --json' output.
 Returns an alist of (NAME . VALUE) strings, or signals a user-error."
@@ -645,7 +537,6 @@ running (useful after changing flake inputs)."
          (message "[nix] Command failed: %s — see buffer above for details"
                   (string-join cmd " "))))))))
 
-;;; ── Run Nix Shell ────────────────────────────────────────────────────────────
 
 (defun my/nix-run-shell ()
   "Open an eshell buffer at the project root and start an interactive nix shell.
@@ -676,15 +567,6 @@ open, so repeated calls don't create duplicate shells."
         (insert cmd)
         (eshell-send-input)))))
 
-;;; ────────────────────────────────────────────────────────────────────────────
-;;; ── Project Environment Status ───────────────────────────────────────────────
-;;; ────────────────────────────────────────────────────────────────────────────
-;; SPC n c shows a buffer with:
-;;   - Project type (flake.nix / shell.nix / none)
-;;   - Whether the nix env is loaded (nix/store on PATH)
-;;   - Which LSP servers are visible on the current PATH
-;;   - eglot's running status
-;;   - .envrc / direnv status
 
 (defconst my/nix--lsp-servers
   '(("nixd"               . "Nix")
@@ -881,20 +763,12 @@ Press g to refresh, q to close."
    ((executable-find "nil")
     (add-to-list 'eglot-server-programs '(nix-mode . ("nil"))))))
 
-;;; ── Keybindings ──────────────────────────────────────────────────────────────
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs
+               '(nix-mode . ("nixd"))))
 
-(my/leader
-  "n"   '(:ignore t                  :which-key "nix")
-  "n S" '(my/nix-project-setup       :which-key "⚡ full setup (envrc→eglot)")
-  "n N" '(my/nix-new-flake           :which-key "new flake.nix")
-  "n c" '(my/nix-env-status          :which-key "env status")
-  "n o" '(my/nix-open-shell-file     :which-key "open shell file")
-  "n e" '(my/nix-create-envrc        :which-key "create .envrc")
-  "n a" '(my/nix-direnv-allow        :which-key "direnv allow")
-  "n r" '(envrc-reload               :which-key "reload envrc")
-  "n l" '(my/nix-load-env            :which-key "load env (no direnv)")
-  "n s" '(my/nix-run-shell           :which-key "nix shell (eshell)")
-  "n t" '(my/nix-shell-type          :which-key "show shell type"))
+(add-hook 'nix-mode-hook #'eglot-ensure)
+
 
 ;;; ── Health Registration ───────────────────────────────────────────────────────
 

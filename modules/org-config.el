@@ -290,6 +290,20 @@ Falls back through `my/path' according to the rest of this configuration."
 ;; Capture is intentionally context-light.
 ;; Most items enter inbox.org and are classified during inbox processing.
 
+(defun my/org-assignment-dates ()
+  "Prompt for a due date and schedule a reminder two days earlier."
+  (let* ((due (org-read-date nil t nil "Assignment due date: "))
+         (parts (decode-time due))
+         (reminder
+          (encode-time 0 0 12
+                       (- (nth 3 parts) 2)
+                       (nth 4 parts)
+                       (nth 5 parts))))
+    (concat "SCHEDULED: "
+            (format-time-string "<%Y-%m-%d %a>" reminder)
+            " DEADLINE: "
+            (format-time-string "<%Y-%m-%d %a>" due))))
+
 (setq org-capture-templates
       `(
         ;; Actions -------------------------------------------------------------
@@ -311,7 +325,7 @@ Falls back through `my/path' according to the rest of this configuration."
         ("a" "Assignment"
          entry
          (file ,(my/org-file "inbox.org"))
-         "* TODO %^{Assignment} :assignment:\nDEADLINE: %^t\n:PROPERTIES:\n:COURSE: %^{Course}\n:CREATED: %U\n:Effort: %^{Estimated effort|1:00}\n:END:\n%?"
+         "* TODO %^{Assignment} :assignment:\n%(my/org-assignment-dates)\n:PROPERTIES:\n:COURSE: %^{Course}\n:CREATED: %U\n:Effort: %^{Estimated effort|1:00}\n:END:\n%?"
          :empty-lines 1)
 
         ("x" "Exam"
@@ -477,14 +491,14 @@ Falls back through `my/path' according to the rest of this configuration."
   (dolist (template
            '(("el"    . "src emacs-lisp")
              ("py"    . "src python")
-             ("c"     . "src C")
+             ;; ("c"     . "src C")
 	     ("nix"   . "src nix")
              ("cpp"   . "src C++")
              ("sh"    . "src shell")
              ("oct"   . "src octave")
-             ("latex" . "src latex")
+             ("la" . "src latex")
              ("rs"    . "src rust")
-             ("spice" . "src spice")))
+             ("sp" . "src spice")))
     (add-to-list 'org-structure-template-alist template)))
 
 ;;; ---------------------------------------------------------------------------

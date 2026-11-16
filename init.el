@@ -1,6 +1,6 @@
 ;;; init.el --- Main entry point -*- lexical-binding: t; -*-
 
-;; Prefer edited source over stale bytecode, including modal backend changes.
+;; Prefer edited source over stale bytecode.
 (setq load-prefer-newer t)
 
 (defvar my/emacs-dir
@@ -27,8 +27,6 @@ All load-path entries and file lookups use this instead of
 (add-to-list 'load-path (expand-file-name "os"      my/emacs-dir))
 (add-to-list 'load-path (expand-file-name "mo-lisp" my/emacs-dir))
 
-;; Define the backend before any auto-loaded module can activate it.
-(require 'mo-modal)
 (require 'mo-paths)
 (require 'mo-helpers)
 (require 'mo-health)
@@ -65,8 +63,7 @@ Use this for drop-in directories: drop a .el file in, restart Emacs, done."
           (message "[my/load-directory] Skipping '%s': %s"
                    (file-name-nondirectory file)
                    (error-message-string err)))))
-     ;; Sorted alphabetically — order matters: keybindings.el (k) must load
-     ;; before any module that calls my/leader (e.g. nix-config.el, n).
+     ;; Load modules in alphabetical order.
      (directory-files dir t "\\.el$"))))
 
 ;; Scan and load every file in modules/

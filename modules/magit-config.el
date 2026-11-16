@@ -1,7 +1,7 @@
 ;;; modules/magit-config.el --- Git interface via Magit -*- lexical-binding: t; -*-
 
 ;;; ── Magit ────────────────────────────────────────────────────────────────────
-;; The definitive Emacs git porcelain.  Bound to SPC g g by keybindings.el.
+;; The Emacs git porcelain.  Open with M-x magit-status.
 (use-package transient
   :ensure t
   :demand t

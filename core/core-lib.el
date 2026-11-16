@@ -71,6 +71,31 @@ Example:
     (set-face-attribute face nil :font font-name :height size)
     t))
 
+(defun my/apply-font (&optional role)
+  "Apply fonts from `my/fonts', or only ROLE when non-nil.
+ROLE is `default', `fixed', or `variable'.  Missing fonts use the same
+fallbacks as startup.  On terminal frames this is a no-op.
+Registry changes last for this session; persist them in your OS config."
+  (interactive)
+  (require 'mo-paths)
+  (when (and role (not (memq role '(default fixed variable))))
+    (user-error "Unknown font role: %s" role))
+  (when (display-graphic-p)
+    (dolist (key (if role (list role) '(default fixed variable)))
+      (let ((face (pcase key ('fixed 'fixed-pitch)
+                         ('variable 'variable-pitch) (_ 'default))))
+        (or (my/set-face-font face (my/font-name key) (my/font-height key))
+            (pcase key
+              ('default (my/set-font "DejaVu Sans Mono" 120))
+              ('variable
+               (or (my/set-face-font face "Source Serif 4" 130)
+                   (my/set-face-font face "Georgia" 130))))
+            (message "No available font for %s; keeping its current font" key)))))
+  (when (called-interactively-p 'interactive)
+    (message (if (display-graphic-p)
+                 "Font registry applied; use M-x my/show-font to inspect"
+               "Terminal fonts are controlled by your terminal emulator"))))
+
 ;;; ── Directory Helpers (no-littering companions) ─────────────────────────────
 ;; Wrappers around no-littering's expansion functions so modules can resolve
 ;; paths without depending on the package symbol directly.  Both functions
