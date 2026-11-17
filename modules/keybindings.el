@@ -1,10 +1,17 @@
 
 ;;; keybindings.el ---simple keybinds for emacs -*- lexical-binding: t; -*-
 
-(use-package god-mode
-  :ensure t
-  :bind ("<escape>" . god-local-mode))
-(define-key god-local-mode-map (kbd ".") #'repeat)
+;; (use-package god-mode
+;;   :ensure t
+;;   :bind ("<escape>" . god-local-mode))
+;; (define-key god-local-mode-map (kbd ".") #'repeat)
+
+
+(add-to-list 'load-path "~/git/devil")
+(require 'devil)
+(global-devil-mode)
+(global-set-key (kbd "C-,") 'global-devil-mode)
+
 
 
 (defvar-keymap my/consult-map
