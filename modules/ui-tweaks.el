@@ -52,6 +52,15 @@
 (setq warning-minimum-log-level :warning)
 (setq warning-minimum-level :error)
 
+(setq split-window-preferred-direction 'horizontal) ; Emacs 31
+(setq window-combination-resize t)
+(setq even-window-sizes 'height-only)
+(setq window-sides-vertical nil)
+(setq switch-to-buffer-in-dedicated-window 'pop)
+(setq split-height-threshold 85)
+(setq split-width-threshold 125)
+(setq window-min-height 3)
+(setq window-min-width 30)
 
 
 

@@ -157,8 +157,10 @@
 ;; Must load after both embark and consult.
 (use-package embark-consult
   :ensure t
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
+  :after (embark consult)
+
+)
+  
 
 
 ;; (add-to-list 'vertico-multiform-categories '(embark-keybinding grid))
