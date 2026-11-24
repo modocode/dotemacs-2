@@ -1,12 +1,15 @@
-;;; os/macos.el --- macOS-specific configuration -*- lexical-binding: t; -*-
 ;;
+;;; os/macos.el --- macOS-specific configuration -*- lexical-binding: t; -*-
 ;; Loaded automatically on macOS/Darwin by init.el.
 ;; Put anything macOS-specific here: modifier key remapping,
 ;; path-from-shell fixes, native fullscreen behaviour, etc.
 
 ;; Example: swap Option and Command so muscle memory from terminal works
-;; (setq mac-option-modifier  'super
-;;       mac-command-modifier 'meta)
+(setq mac-option-modifier  'super
+      mac-command-modifier 'meta
+      mac-right-command-modifier 'control
+      )
+
 
 ;; (my/with-binary "zsh"
 ;;   (use-package exec-path-from-shell

@@ -254,6 +254,7 @@ DIRECTION is -1 for up and 1 for down."
 ;; (define-key god-local-mode-map (kbd ".") #'repeat)
 
 
+
 (add-to-list 'load-path "~/git/devil")
 (add-to-list 'load-path "~/git/unbound")
 (add-to-list 'load-path "~/git/free-keys")
