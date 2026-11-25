@@ -9,40 +9,31 @@
 
 ;;; ── Built-in workspace tabs ──────────────────────────────────────────────────
 
-(use-package tab-bar
-  :ensure nil                           ; built-in
+;; (use-package tab-bar
+;;   :ensure nil                           ; built-in
+;;   :demand t
+;;   :config
+;;   (setq tab-bar-show                    t    ; hide bar when only one tab
+;;         tab-bar-close-button-show       nil
+;;         tab-bar-new-button-show         t
+;;         tab-bar-format                  '(tab-bar-format-tabs-groups ; grouped view
+;;                                           tab-bar-separator))
+;;   (global-tab-bar-mode 1)
+;;   )
+
+(use-package tab-line
+  :ensure nil ; Built-in since Emacs 27
   :demand t
+  :bind (("C-<tab>" . tab-line-switch-to-next-tab)
+         ("C-<iso-lefttab>" . tab-line-switch-to-prev-tab)
+         ("C-S-<tab>" . tab-line-switch-to-prev-tab))
   :config
-  (setq tab-bar-show                    1    ; hide bar when only one tab
-        tab-bar-close-button-show       nil
-        tab-bar-new-button-show         nil
-        tab-bar-tab-name-function       #'tab-bar-tab-name-current-with-count
-        tab-bar-tab-group-function      #'tab-bar-tab-group-default ; show group name in bar
-        tab-bar-format                  '(tab-bar-format-tabs-groups ; grouped view
-                                          tab-bar-separator))
-  ;(tab-bar-mode 1)
-  )
+  (global-tab-line-mode 1)
+  ;; Hide the "+ " and "x" buttons for a cleaner look
+  (setq tab-line-new-button-show nil
+        tab-line-close-button-show
+        tab-line-separator ""))
 
-;;; Centaur-Tabs
-
-(use-package centaur-tabs
-  :ensure t
-  :demand
-  :init
-  (setq centaur-tabs-enable-key-bindings t)
-  :config
-  (setq centaur-tabs-set-icons t
-        centaur-tabs-icon-type 'all-the-icons
-	centaur-tabs-close-button "X"
-	)
-  
-  (centaur-tabs-mode t)
-  :bind
-  ("C-<prior>" . centaur-tabs-backward)
-  ("C-<next>" . centaur-tabs-forward)
-  ("C-S-<prior>" . centaur-tabs-move-current-tab-to-left)
-  ("C-S-<next>" . centaur-tabs-move-current-tab-to-right)
-  )
 
 (provide 'tabs-config)
 ;;; tabs-config.el ends here

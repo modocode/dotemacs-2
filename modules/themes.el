@@ -8,6 +8,15 @@
 (use-package solarized-theme :ensure t)
 (use-package gruvbox-theme  :ensure t)
 
+
+
+
+(defconst folio-theme-directory "~/.emacs.d/themes/folio-theme.el/")
+(add-to-list 'custom-theme-load-path folio-theme-directory)
+
+
+
+
 (use-package doric-themes
   :ensure t
   :demand t

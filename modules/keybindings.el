@@ -36,6 +36,25 @@ Examples:
 
 (require 'thingatpt)
 
+;; Highlight the active region.
+(transient-mark-mode 1)
+
+
+;; Typing replaces a selected region.
+(delete-selection-mode 1)
+
+;; Make C-k at the beginning of a line
+;; kill the whole line.
+(setq kill-whole-line t)
+
+
+;; Allow mark commands to extend an active region.
+(setq mark-even-if-inactive nil)
+
+;; Enable repeatable command sequences.
+(repeat-mode 1)
+
+
 ;; -----------------------------------------------
 ;; Selection primitives
 ;; -----------------------------------------------
@@ -233,7 +252,8 @@ DIRECTION is -1 for up and 1 for down."
   "C-c p" #'my/select-parens-around
   "C-c P" #'my/select-parens
   "M-n"   #'my/move-down
-  "M-p"   #'my/move-up 
+  "M-p"   #'my/move-up
+  "C-="   #'er/expand-region
   )
 
 
@@ -299,13 +319,14 @@ DIRECTION is -1 for up and 1 for down."
   "M-u" nil
   "C-h h" nil 
   )
-
+;; embark keys
 (my/bind-keys nil global-map
   "C-c C-c" #'embark-collect
   "C-c C-e" #'embark-export
+  "C-c C-a" #'embark-act
+  "C-c C-S-A" #'embark-act-all
+  "C-c C-b" #'embark-become
   )
-
-
 
 
 
@@ -322,6 +343,14 @@ DIRECTION is -1 for up and 1 for down."
   )
 
 
+;; process lines
+(my/bind-keys nil global-map
+  "C-S-t"   #'transpose-lines
+  "M-t"     #'transpose-words
+  "C-M-t"   #'transpose-sexps
+  "C-S-k" #'duplicate-dwim
+
+  )
 
 
 (defvar-keymap my/consult-map
@@ -338,9 +367,36 @@ DIRECTION is -1 for up and 1 for down."
 
 
 (defvar-keymap mo-prefix-window-map
+
   :doc "Prefix for window managment"
+  "m" #'maximize-window
+  "r" #'rotate-window
+  "s" #'shrink-window
   )
 
+
+(defvar-keymap mo-org-prefix-map
+  :doc "Prefix for Org Mode"
+  "c" #'org-capture
+  "A" #'org-agenda
+  "R" #'my/org-refile-to-heading
+  "i" #'my/org-process-inbox
+  "t" #'org-todo
+  "C i" #'org-clock-in
+  "C o" #'org-clock-out
+  )
+
+(my/bind-keys org org-agenda-mode-map
+  "n" #'org-agenda-next-item
+  "p" #'org-agenda-previous-item
+  )
+
+(defvar-keymap mo-email-news-prefix
+  :doc "Prefix for My Mail And RSS"
+  :prefix 'mo-email-news
+  "e" #'elfeed
+  "n" #'notmuch
+  )
 
 (defvar-keymap my-mo-file-prefix
   :doc "Prefix Mappings for Files"
@@ -361,6 +417,9 @@ DIRECTION is -1 for up and 1 for down."
   "s" #'emoji-search
   "l" #'emoji-list)
 
+
+
+
 (defvar-keymap mo-prefix-map
   :doc "global keymaps with C-z"
   "i" mo-prefix-insert
@@ -374,7 +433,10 @@ DIRECTION is -1 for up and 1 for down."
   "@" #'split-root-window-below
   "3" #'split-window-right
   "#" #'split-root-window-right
-  "o" #'other-window
+  "O" #'other-window
+  "E" #'mo-email-news
+  "o" #'mo-org-prefix-map
+  "w" #'mo-prefix-window-map
   "g" #'magit-status
   "Q" #'my/reload-init 
   )
@@ -383,6 +445,9 @@ DIRECTION is -1 for up and 1 for down."
   "s" `("Searching" . ,my/consult-map)
   "i" `("insert" . ,mo-prefix-insert)
   "f" `("File" . ,mo-prefix-file)
+  "o" `("Org" . ,mo-org-prefix-map)
+  "w" `("Window" . ,mo-prefix-window-map)
+  "E" `("News/Email" . ,mo-email-news)
   )
 
 

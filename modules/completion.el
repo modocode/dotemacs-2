@@ -98,6 +98,15 @@
    ("M-s g" . consult-grep)
    ("M-g i" . consult-imenu)))
 
+(use-package consult-dir
+  :ensure t
+  )
+
+(my/bind-keys consult-dir vertico-map
+  "C-x C-d" #'consult-dir
+  "C-x C-j" #'consult-dir-jump-file
+  )
+
 
 
 (use-package consult-notes

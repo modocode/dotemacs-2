@@ -1,3 +1,4 @@
+
 ;;; init.el --- Main entry point -*- lexical-binding: t; -*-
 
 ;; Prefer edited source over stale bytecode.
@@ -28,24 +29,28 @@ All load-path entries and file lookups use this instead of
 (add-to-list 'load-path (expand-file-name "mo-lisp" my/emacs-dir))
 
 (require 'mo-paths)
-(require 'mo-helpers)
+;; Load the source so re-evaluating init.el also refreshes helper commands.
+(load (expand-file-name "mo-lisp/mo-helpers.el" my/emacs-dir) nil 'nomessage)
 (require 'mo-health)
 (require 'core-packages)
 (require 'core-lib)
 (require 'core-ui)
 
 
-;; Xah-fly-keys enable
+;Xah-fly-keys enable
 
 ;;(require 'xah-fly-keys)
 
-;; ;; specify a layout. optional
-;; (xah-fly-keys-set-layout "qwerty")
+;; specify a layout. optional
+;;(xah-fly-keys-set-layout "qwerty")
 
-;; (xah-fly-keys 1)
+;;(xah-fly-keys 1)
 
 (global-auto-revert-mode 1)
 
+
+;; (require 'tab-plus)
+;; (tab-plus-mode 1)
 
 (defun my/load-directory (dir)
   "Load every .el file found in DIR.

@@ -21,14 +21,15 @@
 ;;
 
 
-;; (load-theme 'gruber-darker)
-(load-theme 'wombat)
+;; (theme 'gruber-darker)
+(load-theme 'sexy t)				      
 (my/register-font 'default  "SFMono Nerd Font"   120)  ; base/monospace face
 (my/register-font 'fixed    "SFMono Nerd Font"   120)  ; code & inline code blocks
 (my/register-font 'variable "Inconsolata"       130)  ; prose in Org/text buffers
 
 ;; (my/set-font "Inconsolata" 130)
 ;; A long-running daemon can retain display names from an old session.
+(require 'browse-url)
 (require 'browse-url)
 
 (defun my/browser-session-environment ()
@@ -37,12 +38,13 @@
     (when (executable-find "systemctl")
       (dolist (entry (condition-case nil
                         (process-lines "systemctl" "--user" "show-environment")
-                      (error nil)))
+                       (error nil)))
         (when (string-match
                "\\`\\(DISPLAY\\|WAYLAND_DISPLAY\\|XDG_CURRENT_DESKTOP\\|XDG_SESSION_TYPE\\)=\\(.*\\)\\'"
                entry)
           (setenv (match-string 1 entry) (match-string 2 entry)))))
     process-environment))
+
 
 (defun my/browse-url-linux (url &optional _new-window)
   "Open URL in a new Zen tab using current session display settings."

@@ -78,8 +78,8 @@ The font at point can differ because of buffer styling or glyph fallback."
                (mapconcat
                 (lambda (face)
                   (format "%s: %s (%g pt)" face
-                          (face-attribute face :family nil t)
-                          (/ (face-attribute face :height nil t) 10.0)))
+                          (face-attribute face :family nil 'default)
+                          (/ (face-attribute face :height nil 'default) 10.0)))
                 '(default fixed-pitch variable-pitch) "; ")
                (if font (format "; at point: %s" (font-get font :family)) "")))))
 
@@ -143,8 +143,8 @@ reset variables that are already bound (that's intentional — it means your
 customisations survive a reload). Use `(makunbound 'var)' first if you
 need to reset a specific variable."
   (interactive)
-  ;; `my/emacs-dir' is defined in init.el and is always the true config directory.
   (load-file (expand-file-name "init.el" my/emacs-dir))
+  (my/apply-font)
   (message "init.el reloaded."))
 
 ;;; ── LSP / Eglot ─────────────────────────────────────────────────────────────

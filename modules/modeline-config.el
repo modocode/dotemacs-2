@@ -1,21 +1,10 @@
 ;;; modules/modeline-config.el --- Mode line configuration -*- lexical-binding: t; -*-
-;;
-;; doom-modeline: a modern powerline-style mode line.
-;; Requires nerd-icons for segment icons.  LigaSauceCodePro NF (already in
-;; your font fallback chain) provides all the necessary glyphs — no extra
-;; font installation needed.
-
-;;; ── nerd-icons ───────────────────────────────────────────────────────────────
-;; Icon library required by doom-modeline.  On first install, run:
-;;   M-x nerd-icons-install-fonts
-;; to download the Nerd Fonts symbol font to your system.
 
 (use-package nerd-icons
   :ensure t
   :demand t)
 
-;;; ── doom-modeline ────────────────────────────────────────────────────────────
-
+;; doom modeline 
 (use-package doom-modeline
   :ensure t
   :demand t
